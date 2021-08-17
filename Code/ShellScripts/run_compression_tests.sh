@@ -1,5 +1,5 @@
 #!/bin/sh
-#cd /lus/theta-fs0/projects/DL4VIS/FlowSTSR
+#cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 export PATH="$HOME/sz/bin:$PATH"
 #export PATH="$HOME/zfp/bin:$PATH"
 #export PATH="$HOME/fpzip/bin:$PATH"
@@ -40,7 +40,7 @@ export PATH="$HOME/sz/bin:$PATH"
 #python3 mixedLOD_octree.py --downscaling_technique avgpool3D --upscaling_technique model --model_name SSR_iso3D_VF --criterion psnr --start_metric 20 --end_metric 100 --metric_skip 5 --output_folder iso3D_VF_compression --mode 3D --file iso3D_VF_compressiontest.h5 --dims 3 --nx 128 --ny 128 --nz 128 --use_compressor true --compressor sz --load_existing false --debug true --device cuda:3 &
 
 # Mixing 2D dataset
-python3 -u mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2D \
+python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2D \
 --upscaling_technique model --model_name Mixing2D --criterion psnr --start_metric 28 \
 --end_metric 60 --metric_skip 1.0 --output_folder Mixing2D_compression_test --max_LOD 7 \
 --min_chunk 16 --mode 2D --file Mixing2D_compressiontest.h5 --dims 2 --nx 1024 --ny 1024 \
@@ -48,7 +48,7 @@ python3 -u mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
 --device cuda:0 --dynamic_downscaling true --interpolation_heuristic true 
 
-python3 -u sz_test.py --metric mre --channels 1 --file Mixing2D_compressiontest.h5 \
+python3 -u Code/sz_test.py --metric mre --channels 1 --file Mixing2D_compressiontest.h5 \
 --start_value 0.001 --end_value 0.98 --value_skip .004 --dims 2 --nx 1024 --ny 1024 \
 --output_folder Mixing2D_compression_test --save_netcdf false
 

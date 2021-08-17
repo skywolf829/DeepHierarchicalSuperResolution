@@ -1,5 +1,5 @@
 #!/bin/sh
-cd /lus/theta-fs0/projects/DL4VIS/MRSR
+cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 
 #python3 test_SSR.py --output_file_name Isomag2D_2x_trainingdatatest --full_resolution 1024 --channels 1 --save_name bilinear --scale_factor 2 --testing_method bilinear --model_name Isomag2D --print True --device cuda:1 --data_folder Isomag2D --mode 2D 
 #python3 test_SSR.py --output_file_name Isomag2D_2x_trainingdatatest --full_resolution 1024 --channels 1 --save_name bicubic --scale_factor 2 --testing_method bicubic --model_name Isomag2D --print True --device cuda:2 --data_folder Isomag2D --mode 2D 
