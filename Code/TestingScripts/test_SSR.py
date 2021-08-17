@@ -231,27 +231,25 @@ def get_test_results(GT, x, mode):
     else:
         s = ssim3D(GT, x).item()
 
-    return {"PSNR": p, "SSIM": s, "MSE": ms, "MRE": mr}
+    return {"PSNR (dB)": p, "SSIM": s, "MSE": ms, "MRE": mr}
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
     
     parser.add_argument('--mode',default="3D",type=str,help='2D or 3D')
-    parser.add_argument('--data_folder',default="iso1024",type=str,help='Name of dataset to test')
-    parser.add_argument('--model_name',default="SSR",type=str,help='The folder with the model to load')
+    parser.add_argument('--data_folder',default="Isomag3D",type=str,help='Name of dataset to test')
+    parser.add_argument('--model_name',default="Isomag3D",type=str,help='The folder with the model to load')
     parser.add_argument('--device',default="cuda:0",type=str,help='Device to use for testing')
     parser.add_argument('--parallel',default="False",type=str2bool,help='Perform SR in parallel')
     parser.add_argument('--test_on_gpu',default="True",type=str2bool,help='Metrics calculated on GPU?')
-
-    parser.add_argument('--save_name',default="SSR",type=str,help='Where to write results')
-    parser.add_argument('--output_file_name',default="SSR.pkl",type=str,help='Where to write results')
+    parser.add_argument('--output_file_name',default="Isomag3D.results",type=str,help='Where to write results')
     
     args = vars(parser.parse_args())
 
 
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
-    project_folder_path = os.path.join(project_folder_path, "..")
+    project_folder_path = os.path.join(project_folder_path, "..", "..")
     data_folder = os.path.join(project_folder_path, "Data", "SuperResolutionData")
     output_folder = os.path.join(project_folder_path, "Output")
     save_folder = os.path.join(project_folder_path, "SavedModels")
@@ -293,14 +291,14 @@ if __name__ == '__main__':
                 interp: {
                     "Upscaling time": [],
                     "MSE": [],
-                    "PSNR": [],
+                    "PSNR (dB)": [],
                     "SSIM": [],
                     "MRE": []
                 },
                 "model": {
                     "Upscaling time": [],
                     "MSE": [],
-                    "PSNR": [],
+                    "PSNR (dB)": [],
                     "SSIM": [],
                     "MRE": []
                 }
