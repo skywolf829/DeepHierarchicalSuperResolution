@@ -1,4 +1,4 @@
-from spatial_models import Generator, load_models
+from models import Generator, load_models
 from options import Options, load_options
 from utility_functions import streamline_loss3D, str2bool, AvgPool3D, AvgPool2D
 import numpy as np

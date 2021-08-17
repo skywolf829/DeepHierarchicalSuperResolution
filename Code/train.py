@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import argparse
-from datasets import LocalDataset
+from datasets import TrainingDataset
 from datetime import datetime
 from utility_functions import AvgPool2D, AvgPool3D, print_to_log_and_console, reset_grads, str2bool, toImg
 from models import calc_gradient_penalty, init_discrim, init_gen, init_scales, load_models, save_models
@@ -297,7 +297,7 @@ if __name__ == '__main__':
             if args[k] is not None:
                 opt[k] = args[k]
          # Determine scales    
-        dataset = LocalDataset(opt)
+        dataset = TrainingDataset(opt)
         init_scales(opt, dataset)
     else:        
         opt = load_options(os.path.join(save_folder, args["load_from"]))
@@ -307,7 +307,7 @@ if __name__ == '__main__':
             if args[k] is not None:
                 opt[k] = args[k]
         generators, discriminators = load_models(opt,args["device"])
-        dataset = LocalDataset(opt)
+        dataset = TrainingDataset(opt)
 
     now = datetime.datetime.now()
     start_time = time.time()
