@@ -1,9 +1,9 @@
 from __future__ import absolute_import, division, print_function
 import argparse
-from Code.datasets import LocalDataset
+from datasets import LocalDataset
 from datetime import datetime
-from Code.utility_functions import AvgPool2D, AvgPool3D, print_to_log_and_console, reset_grads, str2bool, toImg
-from Code.models import calc_gradient_penalty, init_discrim, init_gen, init_scales, load_models, save_models
+from utility_functions import AvgPool2D, AvgPool3D, print_to_log_and_console, reset_grads, str2bool, toImg
+from models import calc_gradient_penalty, init_discrim, init_gen, init_scales, load_models, save_models
 import torch
 import torch.nn as nn
 import torch.optim as optim
