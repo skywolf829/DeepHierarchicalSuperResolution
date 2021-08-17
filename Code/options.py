@@ -20,7 +20,7 @@ class Options():
         # generator info
         opt["num_blocks"]              = 3
         opt['num_discrim_blocks']      = 5
-        opt["base_num_kernels"]        = 96        # Num of kernels in smallest scale conv layers
+        opt["num_kernels"]             = 96        # Num of kernels in smallest scale conv layers
         opt["kernel_size"]             = 3
         opt["padding"]                 = 1
         opt["stride"]                  = 1

@@ -240,7 +240,7 @@ if __name__ == '__main__':
    
     parser.add_argument('--num_blocks',default=None,type=int, help='Num of conv-batchnorm-relu blocks per gen/discrim')
     parser.add_argument('--num_discrim_blocks',default=None,type=int, help='Num of conv-batchnorm-relu blocks per gen/discrim')
-    parser.add_argument('--base_num_kernels',default=None,type=int, help='Num conv kernels in lowest layer')
+    parser.add_argument('--num_kernels',default=None,type=int, help='Num conv kernels in lowest layer')
     parser.add_argument('--kernel_size',default=None, type=int,help='Conv kernel size')    
     parser.add_argument('--padding',default=None, type=int,help='Conv padding')
     parser.add_argument('--stride',default=None, type=int,help='Conv stride length')

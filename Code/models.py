@@ -135,17 +135,13 @@ def init_scales(opt, dataset):
         print("Scale %i: %s -> %s" % (opt["n"] - 1 - i, str(opt["resolutions"][i]), str(opt["resolutions"][i+1])))
 
 def init_gen(scale, opt):
-    num_kernels = opt['base_num_kernels']
-
-    generator = Generator(opt["resolutions"][scale+1], num_kernels, opt)
+    generator = Generator(opt["resolutions"][scale+1], opt)
     generator.apply(weights_init)
 
-    return generator, num_kernels
+    return generator
 
 def init_discrim(scale, opt):
-    num_kernels = opt['base_num_kernels']
-
-    discriminator = Discriminator(opt["resolutions"][scale+1], num_kernels, opt)
+    discriminator = Discriminator(opt["resolutions"][scale+1], opt)
     discriminator.apply(weights_init)
 
     return discriminator
@@ -180,9 +176,9 @@ class DenseBlock(nn.Module):
 class RRDB(nn.Module):
     def __init__ (self,opt):
         super(RRDB, self).__init__()
-        self.db1 = DenseBlock(opt['base_num_kernels'], int(opt['base_num_kernels']/4), opt)
-        self.db2 = DenseBlock(opt['base_num_kernels'], int(opt['base_num_kernels']/4), opt)
-        self.db3 = DenseBlock(opt['base_num_kernels'], int(opt['base_num_kernels']/4), opt)       
+        self.db1 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)
+        self.db2 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)
+        self.db3 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)       
         self.B = torch.tensor([opt['B']])
         self.register_buffer('B_const', self.B)
 
@@ -204,14 +200,14 @@ class Generator(nn.Module):
         elif(opt['mode'] == "3D"):
             conv_layer = nn.Conv3d
 
-        self.c1 = conv_layer(opt['num_channels'], opt['base_num_kernels'],
+        self.c1 = conv_layer(opt['num_channels'], opt['num_kernels'],
         stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
         self.blocks = []
         for _ in range(opt['num_blocks']):
             self.blocks.append(RRDB(opt))
         self.blocks =  nn.ModuleList(self.blocks)
         
-        self.c2 = conv_layer(opt['base_num_kernels'], opt['base_num_kernels'],
+        self.c2 = conv_layer(opt['num_kernels'], opt['num_kernels'],
         stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
 
         # Upscaling happens between 2 and 3
@@ -220,13 +216,13 @@ class Generator(nn.Module):
         elif(self.opt['mode'] == "3D"):
             fact = opt['SR_per_model']**3
         if(self.opt['upsample_mode'] == "shuffle"):
-            self.c2_vs = conv_layer(opt['base_num_kernels'], opt['base_num_kernels']*fact,
+            self.c2_vs = conv_layer(opt['num_kernels'], opt['num_kernels']*fact,
             stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
        
-        self.c3 = conv_layer(opt['base_num_kernels'], opt['base_num_kernels'],
+        self.c3 = conv_layer(opt['num_kernels'], opt['num_kernels'],
         stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
 
-        self.final_conv = conv_layer(opt['base_num_kernels'], opt['num_channels'],
+        self.final_conv = conv_layer(opt['num_kernels'], opt['num_channels'],
         stride=opt['stride'],padding=2,kernel_size=5)
         self.lrelu = nn.LeakyReLU(0.2, inplace=True)
 
@@ -272,13 +268,11 @@ def VoxelShuffle(t):
     return out
 
 class Discriminator(nn.Module):
-    def __init__ (self, resolution, num_kernels, opt):
+    def __init__ (self, resolution, opt):
         super(Discriminator, self).__init__()
 
         self.resolution = resolution
-        self.num_kernels = num_kernels
 
-        use_sn = opt['regularization'] == "SN"
         if(opt['mode'] == "2D" or opt['mode'] == "3Dto2D"):
             conv_layer = nn.Conv2d
             batchnorm_layer = nn.BatchNorm2d
@@ -291,30 +285,27 @@ class Discriminator(nn.Module):
             # The head goes from 3 channels (RGB) to num_kernels
             if i == 0:
                 modules.append(nn.Sequential(
-                    create_conv_layer(conv_layer, opt['num_channels'], num_kernels, 
-                    opt['kernel_size'], opt['stride'], 0, use_sn),
-                    create_batchnorm_layer(batchnorm_layer, num_kernels, use_sn),
+                    create_conv_layer(conv_layer, opt['num_channels'], opt['num_kernels'], 
+                    opt['kernel_size'], opt['stride'], 0),
+                    create_batchnorm_layer(batchnorm_layer, opt['num_kernels']),
                     nn.LeakyReLU(0.2, inplace=True)
                 ))
             # The tail will go from num_kernels to 1 channel for discriminator optimization
             elif i == opt['num_discrim_blocks']-1:  
                 tail = nn.Sequential(
-                    create_conv_layer(conv_layer, num_kernels, 1, 
-                    opt['kernel_size'], opt['stride'], 0, use_sn)
+                    create_conv_layer(conv_layer, opt['num_kernels'], 1, 
+                    opt['kernel_size'], opt['stride'], 0)
                 )
                 modules.append(tail)
             # Other layers will have 32 channels for the 32 kernels
             else:
                 modules.append(nn.Sequential(
-                    create_conv_layer(conv_layer, num_kernels, num_kernels, 
-                    opt['kernel_size'], opt['stride'], 0, use_sn),
-                    create_batchnorm_layer(batchnorm_layer, num_kernels, use_sn),
+                    create_conv_layer(conv_layer, opt['num_kernels'], opt['num_kernels'], 
+                    opt['kernel_size'], opt['stride'], 0),
+                    create_batchnorm_layer(batchnorm_layer, opt['num_kernels']),
                     nn.LeakyReLU(0.2, inplace=True)
                 ))
         self.model =  nn.Sequential(*modules)
-
-    def receptive_field(self):
-        return (self.opt['kernel_size']-1)*self.opt['num_blocks']
 
     def forward(self, x):
         return self.model(x)
