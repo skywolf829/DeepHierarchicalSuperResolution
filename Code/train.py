@@ -108,8 +108,6 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
 
     for epoch in range(opt['epoch_number'], opt["epochs"]):
                 
-        if(rank == 0):
-            print("Before enumerate")
         for batch_num, real_hr in enumerate(dataloader):
                         
             real_hr = real_hr.to(opt["device"])       
@@ -119,10 +117,9 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
                 
             elif opt['mode'] == "2D":
                 real_lr = AvgPool2D(real_hr, 2)
-
+            print("HR: %s, LR: %s" % (real_hr.shape, real_lr.shape))
             D_loss = 0
             G_loss = 0        
-            gradient_loss = 0
             rec_loss = 0        
             
             # Update discriminator: maximize D(x) + D(G(z))
@@ -152,8 +149,6 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
                 generator.zero_grad()
                 discriminator.zero_grad()
                 G_loss = 0
-                phys_loss = 0
-                path_loss = 0
                 
                 fake = generator(real_lr)
                 
