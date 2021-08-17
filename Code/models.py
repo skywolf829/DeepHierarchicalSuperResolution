@@ -1,5 +1,5 @@
-from Code.utility_functions import create_folder, print_to_log_and_console, weights_init
 from __future__ import absolute_import, division, print_function
+from Code.utility_functions import create_folder, print_to_log_and_console, weights_init
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
