@@ -38,5 +38,5 @@ cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 
 python3 -u Code/train.py --save_name Isomag2D --train_distributed False --gpus_per_node 8 \
 --num_workers 0 --data_folder Isomag2D --mode 2D --patch_size 1024 --training_patch_size 1024 \
---epochs 100 --min_dimension_size 32 \
+--epochs 1 --min_dimension_size 32 \
 --cropping_resolution 1024 --alpha_2 0
