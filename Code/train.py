@@ -39,7 +39,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
     
     # Create the new generator and discriminator for this level
     if(len(generators) == opt['scale_in_training']):
-        generator, num_kernels_this_scale = init_gen(len(generators), opt)
+        generator = init_gen(len(generators), opt)
         discriminator = init_discrim(len(generators), opt)
     else:
         generator = generators[-1]
