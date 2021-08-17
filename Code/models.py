@@ -110,25 +110,23 @@ def calc_gradient_penalty(discrim, real_data, fake_data, LAMBDA, device):
 
 def init_scales(opt, dataset):
     ns = []
-    
-    if(opt["spatial_downscale_ratio"] < 1.0):
-        if(opt['mode'] == "3D"):
-            dims = 3
-            ns.append(round(math.log(opt["min_dimension_size"] / opt['x_resolution']) / math.log(opt["spatial_downscale_ratio"])))
-            ns.append(round(math.log(opt["min_dimension_size"] / opt['y_resolution']) / math.log(opt["spatial_downscale_ratio"])))
-            ns.append(round(math.log(opt["min_dimension_size"] / opt['z_resolution']) / math.log(opt["spatial_downscale_ratio"])))
-            res = [opt['x_resolution'], opt['y_resolution'], opt['z_resolution']]
-        else:
-            dims = 2
-            ns.append(round(math.log(opt["min_dimension_size"] / opt['x_resolution']) / math.log(opt["spatial_downscale_ratio"])))
-            ns.append(round(math.log(opt["min_dimension_size"] / opt['y_resolution']) / math.log(opt["spatial_downscale_ratio"])))
-            res = [opt['x_resolution'], opt['y_resolution']]
+    if(opt['mode'] == "3D"):
+        dims = 3
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[1]) / 0.5))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[2]) / 0.5))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[3]) / 0.5))
+        res = [dataset.resolution[1], dataset.resolution[2], dataset.resolution[3]]
+    else:
+        dims = 2
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[1]) / 0.5))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[2]) / 0.5))
+        res = [dataset.resolution[1], dataset.resolution[2]]
     print(ns)
     opt["n"] = min(ns)
     print("The model will have %i generators" % (opt["n"]))
     for i in range(opt["n"]+1):
         scaling = []
-        factor =  opt["spatial_downscale_ratio"]**i
+        factor =  0.5**i
         for j in range(dims):
             x = int(res[j] * factor)
             scaling.append(x)
@@ -196,7 +194,7 @@ class RRDB(nn.Module):
         return out
 
 class Generator(nn.Module):
-    def __init__ (self, resolution, num_kernels, opt):
+    def __init__ (self, resolution, opt):
         super(Generator, self).__init__()
         self.resolution = resolution
         self.opt = opt
@@ -209,7 +207,7 @@ class Generator(nn.Module):
         self.c1 = conv_layer(opt['num_channels'], opt['base_num_kernels'],
         stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
         self.blocks = []
-        for i in range(opt['num_blocks']):
+        for _ in range(opt['num_blocks']):
             self.blocks.append(RRDB(opt))
         self.blocks =  nn.ModuleList(self.blocks)
         
@@ -231,26 +229,6 @@ class Generator(nn.Module):
         self.final_conv = conv_layer(opt['base_num_kernels'], opt['num_channels'],
         stride=opt['stride'],padding=2,kernel_size=5)
         self.lrelu = nn.LeakyReLU(0.2, inplace=True)
-
-    def get_input_shape(self):
-        shape = []
-        shape.append(1)
-        shape.append(self.opt['num_channels'])
-        for i in range(len(self.resolution)):
-            shape.append(self.resolution[i])
-        return shape
-
-    def get_params(self):
-        if(self.opt['separate_chans']):
-            p = []
-            for i in range(self.opt['num_channels']):
-                p = p + list(self.model[i].parameters())
-            return p
-        else:
-            return self.model.parameters()
-
-    def receptive_field(self):
-        return (self.opt['kernel_size']-1)*self.opt['num_blocks']
 
     def forward(self, x):
         x = self.c1(x)

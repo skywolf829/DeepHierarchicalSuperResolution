@@ -56,7 +56,9 @@ class TrainingDataset(torch.utils.data.Dataset):
             f = h5py.File(os.path.join(folder_to_load, filename), 'r')
             d = torch.tensor(f.get('data'))
             f.close()
-            self.items.append(d)    
+            self.items.append(d)
+        self.resolution = self.items[0].shape
+        print("Resolution: " + str(self.resolution))
 
     def __len__(self):
         return len(self.items)
