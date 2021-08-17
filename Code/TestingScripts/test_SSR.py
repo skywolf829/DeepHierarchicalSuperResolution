@@ -290,28 +290,19 @@ if __name__ == '__main__':
         "amd": []
     }
 
-    images = []
-
     with torch.no_grad():
+        for scale in range(len(generators)):
+            scale_factor_in_testing = 2**(scale+1)
+            
         for i in range(len(dataset)):
-            if(p):
-                print("Loading dataset item : " + str(i) + " name: " + dataset.item_names[i])
-            start_load_time = time.time()
-            if(args['debug']):
-                if(args['mode'] == "3D"):
-                    GT_data = torch.randn([1, args['channels'], args['full_resolution'], args['full_resolution'], args['full_resolution']]).to(args['device'])
-                elif(args['mode'] == "2D"):
-                    GT_data = torch.randn([1, args['channels'], args['full_resolution'], args['full_resolution']]).to(args['device'])
-            else:
-                GT_data = dataset[i].to(args['device'])
+            GT_data = dataset[i].clone().to(args['device'])
+
             if(args['fix_dim_order']):
                 GT_data = GT_data.permute(0, 4, 1, 2, 3)
             end_load_time = time.time()
             GT_data.requires_grad_(False)
-            if(p):
-                print("Data size: " + str(GT_data.shape))
-                print("Finished loading in " + str(end_load_time-start_load_time) + \
-                    ". Downscaling by " + str(args['scale_factor']))
+            print("Data size: " + str(GT_data.shape))
+                
 
             
             if(opt['downsample_mode'] == "average_pooling"):

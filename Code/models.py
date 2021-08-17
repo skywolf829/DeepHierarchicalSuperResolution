@@ -286,7 +286,7 @@ class Discriminator(nn.Module):
             if i == 0:
                 modules.append(nn.Sequential(
                     create_conv_layer(conv_layer, opt['num_channels'], opt['num_kernels'], 
-                    opt['kernel_size'], opt['stride'], 0),
+                    opt['kernel_size'], opt['stride']),
                     create_batchnorm_layer(batchnorm_layer, opt['num_kernels']),
                     nn.LeakyReLU(0.2, inplace=True)
                 ))
@@ -294,14 +294,14 @@ class Discriminator(nn.Module):
             elif i == opt['num_discrim_blocks']-1:  
                 tail = nn.Sequential(
                     create_conv_layer(conv_layer, opt['num_kernels'], 1, 
-                    opt['kernel_size'], opt['stride'], 0)
+                    opt['kernel_size'], opt['stride'])
                 )
                 modules.append(tail)
             # Other layers will have 32 channels for the 32 kernels
             else:
                 modules.append(nn.Sequential(
                     create_conv_layer(conv_layer, opt['num_kernels'], opt['num_kernels'], 
-                    opt['kernel_size'], opt['stride'], 0),
+                    opt['kernel_size'], opt['stride']),
                     create_batchnorm_layer(batchnorm_layer, opt['num_kernels']),
                     nn.LeakyReLU(0.2, inplace=True)
                 ))
