@@ -112,14 +112,14 @@ def init_scales(opt, dataset):
     ns = []
     if(opt['mode'] == "3D"):
         dims = 3
-        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[1]) / 0.5))
-        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[2]) / 0.5))
-        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[3]) / 0.5))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[1]) / 2))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[2]) / 2))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[3]) / 2))
         res = [dataset.resolution[1], dataset.resolution[2], dataset.resolution[3]]
     else:
         dims = 2
-        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[1]) / 0.5))
-        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[2]) / 0.5))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[1]) / 2))
+        ns.append(round(math.log(opt["min_dimension_size"] / dataset.resolution[2]) / 2))
         res = [dataset.resolution[1], dataset.resolution[2]]
     print(ns)
     opt["n"] = min(ns)
