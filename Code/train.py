@@ -24,8 +24,9 @@ save_folder = os.path.join(project_folder_path, "SavedModels")
 
 
 def train_single_scale(rank, generators, discriminators, opt, dataset):
-    print("Training on device " + str(rank) + ", initializing process group.")
+    print("Training on device " + str(rank))
     if(opt['train_distributed']):        
+        print("Initializing process group.")
         opt['device'] = "cuda:" + str(rank)
         dist.init_process_group(                                   
             backend='nccl',                                         

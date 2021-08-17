@@ -232,11 +232,6 @@ if __name__ == '__main__':
     parser.add_argument('--parallel',default="False",type=str2bool,help='Perform SR in parallel')
     parser.add_argument('--test_on_gpu',default="True",type=str2bool,help='Metrics calculated on GPU?')
 
-    parser.add_argument('--test_mse',default="True",type=str2bool,help='Enables tests for mse')
-    parser.add_argument('--test_psnr',default="True",type=str2bool,help='Enables tests for mse')
-    parser.add_argument('--test_mre',default="True",type=str2bool,help='Enables tests for maximum relative error')
-    parser.add_argument('--test_ssim',default="True",type=str2bool,help='Enables tests for maximum relative error')
-
     parser.add_argument('--save_name',default="SSR",type=str,help='Where to write results')
     parser.add_argument('--output_file_name',default="SSR.pkl",type=str,help='Where to write results')
     
@@ -292,217 +287,217 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         for scale in range(len(generators)):
-            scale_factor_in_testing = 2**(scale+1)
-            
-        for i in range(len(dataset)):
-            GT_data = dataset[i].clone().to(args['device'])
+            scale_factor_in_testing = str(2**(scale+1)) + "x"
 
-            if(args['fix_dim_order']):
-                GT_data = GT_data.permute(0, 4, 1, 2, 3)
-            end_load_time = time.time()
-            GT_data.requires_grad_(False)
-            print("Data size: " + str(GT_data.shape))
+            for i in range(len(dataset)):
+                GT_data = dataset[i].clone().to(args['device'])
+
+                if(args['fix_dim_order']):
+                    GT_data = GT_data.permute(0, 4, 1, 2, 3)
+                end_load_time = time.time()
+                GT_data.requires_grad_(False)
+                print("Data size: " + str(GT_data.shape))
+                    
+
+                
+                if(opt['downsample_mode'] == "average_pooling"):
+                    chans = []
+                    if(args['mode'] == "3D"):
+                        for j in range(args['channels']):
+                            LR_data = AvgPool3D(GT_data[:,j:j+1,:,:,:], args['scale_factor'])
+                            chans.append(LR_data)
+                    elif(args['mode'] == "2D"):
+                        for j in range(args['channels']):
+                            LR_data = AvgPool2D(GT_data[:,j:j+1,:,:], args['scale_factor'])
+                            chans.append(LR_data)
+                    LR_data = torch.cat(chans, dim=1)
+                elif(opt['downsample_mode'] == "subsampling"):
+                    if(args['mode'] == "3D"):
+                        LR_data = GT_data[:,:,::args['scale_factor'], ::args['scale_factor'],::args['scale_factor']].clone()
+                    elif(args['mode'] == "2D"):
+                        LR_data = GT_data[:,:,::args['scale_factor'], ::args['scale_factor']].clone()
+
+                if opt['scaling_mode'] == "channel" and args['testing_method'] == "model":
+                    mins = []
+                    maxs = []
+                    for c in range(GT_data.shape[1]):
+                        mins.append(GT_data[:,c].min())
+                        maxs.append(GT_data[:,c].max())
+                        LR_data[:,c] -= mins[-1]
+                        LR_data[:,c] *= (1/(maxs[-1]-mins[-1]))
+                if(not args['test_on_gpu']):
+                    GT_data = GT_data.to("cpu")
+                torch.cuda.empty_cache()
+                if(p):
+                    print("Finished downscaling to " + str(LR_data.shape) + ". Performing super resolution")
+                
+                inference_start_time = time.time()
+                if(args['testing_method'] == "model"):
+                    current_ds = args['scale_factor']
+                    while(current_ds > 1):
+                        gen_to_use = int(len(generators) - log2(current_ds))
+                        if(torch.cuda.device_count() > 1 and args['parallel'] and args['mode'] == '3D'):
+                            if(p):
+                                print("Upscaling in parallel on " + str(len(devices)) + " gpus")
+                            LR_data = generate_by_patch_parallel(generators[gen_to_use], 
+                            LR_data, 140, 10, devices)
+                        else:
+                            if(args['mode'] == '3D'):
+                                LR_data = generate_by_patch(generators[gen_to_use], 
+                                LR_data, 140, 10, args['device'])
+                            elif(args['mode'] == '2D'):
+                                with torch.no_grad():
+                                    LR_data = generators[gen_to_use](LR_data)
+                        current_ds = int(current_ds / 2)
+                else:
+                    if(args['mode'] == "3D"):
+                        LR_data = F.interpolate(LR_data, scale_factor=args['scale_factor'], 
+                        mode="trilinear", align_corners=True)
+                    elif(args['mode'] == '2D'):
+                        LR_data = F.interpolate(LR_data, scale_factor=args['scale_factor'], 
+                        mode=args['testing_method'], align_corners=True)
+                inference_end_time = time.time()
+                
+                inference_this_frame = inference_end_time - inference_start_time
+                if opt['scaling_mode'] == "channel" and args['testing_method'] == "model":
+                    for c in range(GT_data.shape[1]):
+                        LR_data[:,c] *= (maxs[c]-mins[c])
+                        LR_data[:,c] += mins[c]
+                if(p):
+                    print("Finished super resolving in %0.04f seconds. Final shape: %s. Performing tests." % \
+                        (inference_this_frame, str(LR_data.shape)))
+                if(not args['test_on_gpu']):
+                    LR_data = LR_data.to("cpu")
+
+                mse_this_frame = None
+                psnr_this_frame = None
+                mre_this_frame = None
+                img_psnr_this_frame = None
+                img_ssim_this_frame = None
+                img_fid_this_frame = None
+
+                d['inference_time'].append(inference_this_frame)
+
+                if(args['mode'] == '3D'):
+                    LR_img_this_frame = LR_data[0,:,int(LR_data.shape[2]/2),:,:].clone().cpu()
+                    GT_img_this_frame = GT_data[0,:,int(GT_data.shape[2]/2),:,:].clone().cpu()
+                elif(args['mode'] == '2D'):
+                    LR_img_this_frame = LR_data[0,:,:,:].clone().cpu()
+                    GT_img_this_frame = GT_data[0,:,:,:].clone().cpu()
+
+                LR_img_this_frame -= GT_data.min().cpu()
+                GT_img_this_frame -= GT_data.min().cpu()
+
+                LR_img_this_frame *= (255/(GT_data.max().cpu()-GT_data.min().cpu()))
+                GT_img_this_frame *= (255/(GT_data.max().cpu()-GT_data.min().cpu()))
+
+                LR_img_this_frame = LR_img_this_frame.permute(1, 2, 0).detach().cpu().numpy().astype(np.uint8)
+                GT_img_this_frame = GT_img_this_frame.permute(1, 2, 0).detach().cpu().numpy().astype(np.uint8)
+
+                img_folder = os.path.join(output_folder, str(args['scale_factor']) + \
+                    "x_imgs")
+                if not os.path.exists(img_folder):
+                    os.makedirs(img_folder)
+                
+                LR_img_name = os.path.join(img_folder, dataset.item_names[i]+\
+                    "_"+args['save_name']+".png")
+                GT_img_name = os.path.join(img_folder, dataset.item_names[i]+\
+                    "_GT.png")
+                imageio.imwrite(LR_img_name, LR_img_this_frame)
+                imageio.imwrite(GT_img_name, GT_img_this_frame)
                 
 
-            
-            if(opt['downsample_mode'] == "average_pooling"):
-                chans = []
-                if(args['mode'] == "3D"):
-                    for j in range(args['channels']):
-                        LR_data = AvgPool3D(GT_data[:,j:j+1,:,:,:], args['scale_factor'])
-                        chans.append(LR_data)
-                elif(args['mode'] == "2D"):
-                    for j in range(args['channels']):
-                        LR_data = AvgPool2D(GT_data[:,j:j+1,:,:], args['scale_factor'])
-                        chans.append(LR_data)
-                LR_data = torch.cat(chans, dim=1)
-            elif(opt['downsample_mode'] == "subsampling"):
-                if(args['mode'] == "3D"):
-                    LR_data = GT_data[:,:,::args['scale_factor'], ::args['scale_factor'],::args['scale_factor']].clone()
-                elif(args['mode'] == "2D"):
-                    LR_data = GT_data[:,:,::args['scale_factor'], ::args['scale_factor']].clone()
+                if(args['test_mse']):
+                    mse_item = mse_func(GT_data, LR_data, args['device'] if args['test_on_gpu'] else "cpu").item()
+                    if(p):
+                        print("MSE: " + str(mse_item))
+                    d['mse'].append(mse_item)
 
-            if opt['scaling_mode'] == "channel" and args['testing_method'] == "model":
-                mins = []
-                maxs = []
-                for c in range(GT_data.shape[1]):
-                    mins.append(GT_data[:,c].min())
-                    maxs.append(GT_data[:,c].max())
-                    LR_data[:,c] -= mins[-1]
-                    LR_data[:,c] *= (1/(maxs[-1]-mins[-1]))
-            if(not args['test_on_gpu']):
-                GT_data = GT_data.to("cpu")
-            torch.cuda.empty_cache()
-            if(p):
-                print("Finished downscaling to " + str(LR_data.shape) + ". Performing super resolution")
-            
-            inference_start_time = time.time()
-            if(args['testing_method'] == "model"):
-                current_ds = args['scale_factor']
-                while(current_ds > 1):
-                    gen_to_use = int(len(generators) - log2(current_ds))
-                    if(torch.cuda.device_count() > 1 and args['parallel'] and args['mode'] == '3D'):
-                        if(p):
-                            print("Upscaling in parallel on " + str(len(devices)) + " gpus")
-                        LR_data = generate_by_patch_parallel(generators[gen_to_use], 
-                        LR_data, 140, 10, devices)
-                    else:
-                        if(args['mode'] == '3D'):
-                            LR_data = generate_by_patch(generators[gen_to_use], 
-                            LR_data, 140, 10, args['device'])
-                        elif(args['mode'] == '2D'):
-                            with torch.no_grad():
-                                LR_data = generators[gen_to_use](LR_data)
-                    current_ds = int(current_ds / 2)
-            else:
-                if(args['mode'] == "3D"):
-                    LR_data = F.interpolate(LR_data, scale_factor=args['scale_factor'], 
-                    mode="trilinear", align_corners=True)
-                elif(args['mode'] == '2D'):
-                    LR_data = F.interpolate(LR_data, scale_factor=args['scale_factor'], 
-                    mode=args['testing_method'], align_corners=True)
-            inference_end_time = time.time()
-            
-            inference_this_frame = inference_end_time - inference_start_time
-            if opt['scaling_mode'] == "channel" and args['testing_method'] == "model":
-                for c in range(GT_data.shape[1]):
-                    LR_data[:,c] *= (maxs[c]-mins[c])
-                    LR_data[:,c] += mins[c]
-            if(p):
-                print("Finished super resolving in %0.04f seconds. Final shape: %s. Performing tests." % \
-                    (inference_this_frame, str(LR_data.shape)))
-            if(not args['test_on_gpu']):
-                LR_data = LR_data.to("cpu")
+                if(args['test_psnr']):
+                    psnr_item = psnr_func(
+                        GT_data,
+                        LR_data, 
+                        args['device'] if args['test_on_gpu'] else "cpu").item()
+                    if(p):
+                        print("PSNR: " + str(psnr_item))
+                    d['psnr'].append(psnr_item)
 
-            mse_this_frame = None
-            psnr_this_frame = None
-            mre_this_frame = None
-            img_psnr_this_frame = None
-            img_ssim_this_frame = None
-            img_fid_this_frame = None
+                    if(args['mode'] == '2D'):
+                        inner_psnr_item = psnr_func(
+                            GT_data[:,:,6:GT_data.shape[2]-6,
+                                    6:GT_data.shape[3]-6], 
+                                    LR_data[:,:,6:LR_data.shape[2]-6,
+                                    6:LR_data.shape[3]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
+                    elif(args['mode'] == '3D'):
+                        inner_psnr_item = psnr_func(
+                            GT_data[:,:,6:GT_data.shape[2]-6,
+                                    6:GT_data.shape[3]-6,
+                                    6:GT_data.shape[4]-6], 
+                                    LR_data[:,:,6:LR_data.shape[2]-6,
+                                    6:LR_data.shape[3]-6,
+                                    6:LR_data.shape[4]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
+                    if(p):
+                        print("Inner PSNR: " + str(inner_psnr_item))
+                    d['inner_psnr'].append(inner_psnr_item)
 
-            d['inference_time'].append(inference_this_frame)
-
-            if(args['mode'] == '3D'):
-                LR_img_this_frame = LR_data[0,:,int(LR_data.shape[2]/2),:,:].clone().cpu()
-                GT_img_this_frame = GT_data[0,:,int(GT_data.shape[2]/2),:,:].clone().cpu()
-            elif(args['mode'] == '2D'):
-                LR_img_this_frame = LR_data[0,:,:,:].clone().cpu()
-                GT_img_this_frame = GT_data[0,:,:,:].clone().cpu()
-
-            LR_img_this_frame -= GT_data.min().cpu()
-            GT_img_this_frame -= GT_data.min().cpu()
-
-            LR_img_this_frame *= (255/(GT_data.max().cpu()-GT_data.min().cpu()))
-            GT_img_this_frame *= (255/(GT_data.max().cpu()-GT_data.min().cpu()))
-
-            LR_img_this_frame = LR_img_this_frame.permute(1, 2, 0).detach().cpu().numpy().astype(np.uint8)
-            GT_img_this_frame = GT_img_this_frame.permute(1, 2, 0).detach().cpu().numpy().astype(np.uint8)
-
-            img_folder = os.path.join(output_folder, str(args['scale_factor']) + \
-                "x_imgs")
-            if not os.path.exists(img_folder):
-                os.makedirs(img_folder)
-            
-            LR_img_name = os.path.join(img_folder, dataset.item_names[i]+\
-                "_"+args['save_name']+".png")
-            GT_img_name = os.path.join(img_folder, dataset.item_names[i]+\
-                "_GT.png")
-            imageio.imwrite(LR_img_name, LR_img_this_frame)
-            imageio.imwrite(GT_img_name, GT_img_this_frame)
-            
-
-            if(args['test_mse']):
-                mse_item = mse_func(GT_data, LR_data, args['device'] if args['test_on_gpu'] else "cpu").item()
-                if(p):
-                    print("MSE: " + str(mse_item))
-                d['mse'].append(mse_item)
-
-            if(args['test_psnr']):
-                psnr_item = psnr_func(
-                    GT_data,
-                    LR_data, 
-                    args['device'] if args['test_on_gpu'] else "cpu").item()
-                if(p):
-                    print("PSNR: " + str(psnr_item))
-                d['psnr'].append(psnr_item)
-
-                if(args['mode'] == '2D'):
-                    inner_psnr_item = psnr_func(
+                if(args['test_mre']):
+                    mre_item = mre_func(GT_data, LR_data, args['device'] if args['test_on_gpu'] else "cpu").item()
+                    if(p):
+                        print("MRE: " + str(mre_item))
+                    d['mre'].append(mre_item)
+                
+                if(args['test_mre']):
+                    if(args['mode'] == '2D'):
+                        mre_item = mre_func(
+                            GT_data[:,:,6:GT_data.shape[2]-6,
+                                    6:GT_data.shape[3]-6], 
+                                    LR_data[:,:,6:LR_data.shape[2]-6,
+                                    6:LR_data.shape[3]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
+                    elif(args['mode'] == '3D'):
+                        mre_item = mre_func(
+                            GT_data[:,:,6:GT_data.shape[2]-6,
+                                    6:GT_data.shape[3]-6,
+                                    6:GT_data.shape[4]-6], 
+                                    LR_data[:,:,6:LR_data.shape[2]-6,
+                                    6:LR_data.shape[3]-6,
+                                    6:LR_data.shape[4]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
+                    if(p):
+                        print("Inner MRE: " + str(mre_item))
+                    d['inner_mre'].append(mre_item)
+                if(args['test_ssim']):
+                    if(args['mode'] == '2D'):
+                        ssim_item = ssim(GT_data, LR_data).item()
+                    elif(args['mode'] == '3D'):
+                        ssim_item = ssim3D(GT_data, LR_data).item()
+                    d['ssim'].append(ssim_item)
+                if(args['test_streamline']):
+                    streamline_avg, streamline_std = streamline_func(GT_data, LR_data, args['device'])
+                    d["streamline_error_mean"].append(streamline_avg)
+                    d["streamline_error_std"].append(streamline_std)
+                
+                            
+                if(args['test_aad']):
+                    cs = torch.nn.CosineSimilarity(dim=1).to(args['device'])
+                    angles = (torch.abs(cs(LR_data[:,:,6:LR_data.shape[2]-6,
+                        6:LR_data.shape[3]-6,6:LR_data.shape[4]-6], 
                         GT_data[:,:,6:GT_data.shape[2]-6,
-                                6:GT_data.shape[3]-6], 
-                                LR_data[:,:,6:LR_data.shape[2]-6,
-                                6:LR_data.shape[3]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
-                elif(args['mode'] == '3D'):
-                    inner_psnr_item = psnr_func(
-                        GT_data[:,:,6:GT_data.shape[2]-6,
-                                6:GT_data.shape[3]-6,
-                                6:GT_data.shape[4]-6], 
-                                LR_data[:,:,6:LR_data.shape[2]-6,
-                                6:LR_data.shape[3]-6,
-                                6:LR_data.shape[4]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
-                if(p):
-                    print("Inner PSNR: " + str(inner_psnr_item))
-                d['inner_psnr'].append(inner_psnr_item)
+                        6:GT_data.shape[3]-6,6:GT_data.shape[4]-6]) - 1) / 2).mean().item()
+                    d['aad'].append(angles)
 
-            if(args['test_mre']):
-                mre_item = mre_func(GT_data, LR_data, args['device'] if args['test_on_gpu'] else "cpu").item()
-                if(p):
-                    print("MRE: " + str(mre_item))
-                d['mre'].append(mre_item)
-            
-            if(args['test_mre']):
-                if(args['mode'] == '2D'):
-                    mre_item = mre_func(
-                        GT_data[:,:,6:GT_data.shape[2]-6,
-                                6:GT_data.shape[3]-6], 
-                                LR_data[:,:,6:LR_data.shape[2]-6,
-                                6:LR_data.shape[3]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
-                elif(args['mode'] == '3D'):
-                    mre_item = mre_func(
-                        GT_data[:,:,6:GT_data.shape[2]-6,
-                                6:GT_data.shape[3]-6,
-                                6:GT_data.shape[4]-6], 
-                                LR_data[:,:,6:LR_data.shape[2]-6,
-                                6:LR_data.shape[3]-6,
-                                6:LR_data.shape[4]-6], args['device'] if args['test_on_gpu'] else "cpu").item()
-                if(p):
-                    print("Inner MRE: " + str(mre_item))
-                d['inner_mre'].append(mre_item)
-            if(args['test_ssim']):
-                if(args['mode'] == '2D'):
-                    ssim_item = ssim(GT_data, LR_data).item()
-                elif(args['mode'] == '3D'):
-                    ssim_item = ssim3D(GT_data, LR_data).item()
-                d['ssim'].append(ssim_item)
-            if(args['test_streamline']):
-                streamline_avg, streamline_std = streamline_func(GT_data, LR_data, args['device'])
-                d["streamline_error_mean"].append(streamline_avg)
-                d["streamline_error_std"].append(streamline_std)
-            
-                        
-            if(args['test_aad']):
-                cs = torch.nn.CosineSimilarity(dim=1).to(args['device'])
-                angles = (torch.abs(cs(LR_data[:,:,6:LR_data.shape[2]-6,
-                    6:LR_data.shape[3]-6,6:LR_data.shape[4]-6], 
-                    GT_data[:,:,6:GT_data.shape[2]-6,
-                    6:GT_data.shape[3]-6,6:GT_data.shape[4]-6]) - 1) / 2).mean().item()
-                d['aad'].append(angles)
+                if(args['test_amd']):
+                    mags = torch.abs(torch.norm(LR_data[:,:,6:LR_data.shape[2]-6,
+                        6:LR_data.shape[3]-6,6:LR_data.shape[4]-6], dim=1) \
+                        - torch.norm(GT_data[:,:,6:GT_data.shape[2]-6,
+                        6:GT_data.shape[3]-6,6:GT_data.shape[4]-6], dim=1)).mean().item()
+                    d['amd'].append(mags)
 
-            if(args['test_amd']):
-                mags = torch.abs(torch.norm(LR_data[:,:,6:LR_data.shape[2]-6,
-                    6:LR_data.shape[3]-6,6:LR_data.shape[4]-6], dim=1) \
-                    - torch.norm(GT_data[:,:,6:GT_data.shape[2]-6,
-                    6:GT_data.shape[3]-6,6:GT_data.shape[4]-6], dim=1)).mean().item()
-                d['amd'].append(mags)
-
-            '''
-            if(args['test_img_psnr']):
-                psnr_item = img_psnr_func(GT_data, LR_data, "cpu")
-                if(p):
-                    print("Image PSNR: " + str(psnr_item))
-                d['img_psnr'].append(psnr_item)
-            '''
+                '''
+                if(args['test_img_psnr']):
+                    psnr_item = img_psnr_func(GT_data, LR_data, "cpu")
+                    if(p):
+                        print("Image PSNR: " + str(psnr_item))
+                    d['img_psnr'].append(psnr_item)
+                '''
     
     if(os.path.exists(results_location)):
         all_data = load_obj(results_location)
