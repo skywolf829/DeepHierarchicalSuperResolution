@@ -205,7 +205,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
                     
         if(rank == 0):
             print("Epoch done")
-        discriminator_scheduler.step()
+        if(opt["alpha_2"] > 0.0):
+            discriminator_scheduler.step()
         generator_scheduler.step()
         if(rank == 0):
             print("Step")
