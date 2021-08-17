@@ -117,7 +117,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
             elif opt['mode'] == "2D":
                 real_lr = AvgPool2D(real_hr, 2)
 
-            print("HR: %s, LR: %s" % (real_hr.shape, real_lr.shape))
+            #print("HR: %s, LR: %s" % (real_hr.shape, real_lr.shape))
             D_loss = 0
             G_loss = 0        
             rec_loss = 0        
