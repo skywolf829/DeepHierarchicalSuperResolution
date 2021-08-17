@@ -131,11 +131,10 @@ dmypy.json
 # Other
 
 /SavedModels
-/InputData
 /Other
 /Output
 /tensorboard
-/TestingData
+/Data
 *.npy
 *.png
 *.gif
