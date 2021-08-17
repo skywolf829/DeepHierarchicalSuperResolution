@@ -53,7 +53,7 @@ class TrainingDataset(torch.utils.data.Dataset):
             self.item_names.append(filename)            
             
             print("Loading " + filename)   
-            f = h5py.File(os.path.join(self.opt['data_folder'], filename), 'r')
+            f = h5py.File(os.path.join(folder_to_load, filename), 'r')
             d = torch.tensor(f.get('data'))
             f.close()
             self.items.append(d)    
