@@ -215,8 +215,8 @@ class Generator(nn.Module):
             fact = 4
         elif(self.opt['mode'] == "3D"):
             fact = 8
-        if(self.opt['upsample_mode'] == "shuffle"):
-            self.c2_vs = conv_layer(opt['num_kernels'], opt['num_kernels']*fact,
+
+        self.c2_vs = conv_layer(opt['num_kernels'], opt['num_kernels']*fact,
             stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
        
         self.c3 = conv_layer(opt['num_kernels'], opt['num_kernels'],
@@ -240,15 +240,11 @@ class Generator(nn.Module):
         out = self.c2(out)
         out = x + out
 
-        if(self.opt['upsample_mode'] != "shuffle"):
-            out = F.interpolate(out, scale_factor=2.0, 
-            mode=self.opt['upsample_mode'], align_corners=True)
-        elif(self.opt['upsample_mode'] == "shuffle"):
-            out = self.c2_vs(out)
-            if(self.opt['mode'] == "3D"):
-                out = VoxelShuffle(out)
-            elif(self.opt['mode'] == "2D"):
-                out = self.pix_shuffle(out)
+        out = self.c2_vs(out)
+        if(self.opt['mode'] == "3D"):
+            out = VoxelShuffle(out)
+        elif(self.opt['mode'] == "2D"):
+            out = self.pix_shuffle(out)
         
         out = self.lrelu(self.c3(out))
         out = self.final_conv(out)

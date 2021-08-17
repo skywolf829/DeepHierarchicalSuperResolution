@@ -113,10 +113,10 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
             real_hr = real_hr.to(opt["device"])       
             
             if opt['mode'] == "3D": 
-                real_lr = AvgPool3D(real_hr, 2)
-                
+                real_lr = AvgPool3D(real_hr, 2)                
             elif opt['mode'] == "2D":
                 real_lr = AvgPool2D(real_hr, 2)
+
             print("HR: %s, LR: %s" % (real_hr.shape, real_lr.shape))
             D_loss = 0
             G_loss = 0        
@@ -241,10 +241,7 @@ if __name__ == '__main__':
     parser.add_argument('--padding',default=None, type=int,help='Conv padding')
     parser.add_argument('--stride',default=None, type=int,help='Conv stride length')
     parser.add_argument('--B',default=None, type=float,help='Residual scaling factor')
-    
-    parser.add_argument('--downsample_mode',default=None, type=str,help='Downscample algorithm')
-    parser.add_argument('--upsample_mode',default=None, type=str,help='Upsample algorithm')
-        
+            
     parser.add_argument('--train_distributed',type=str2bool,default=None, help='Use distributed training')
     parser.add_argument('--device',type=str,default=None, help='Device to use')
     parser.add_argument('--gpus_per_node',default=None, type=int,help='Whether or not to save discriminators')

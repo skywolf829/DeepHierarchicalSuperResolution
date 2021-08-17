@@ -221,6 +221,9 @@ def generate_by_patch_parallel(generator, input_volume, patch_size, receptive_fi
     
     return final_volume
 
+def get_test_results(GT, x):
+    #Todo
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
@@ -291,45 +294,20 @@ if __name__ == '__main__':
 
             for i in range(len(dataset)):
                 GT_data = dataset[i].clone().to(args['device'])
-
-                if(args['fix_dim_order']):
-                    GT_data = GT_data.permute(0, 4, 1, 2, 3)
-                end_load_time = time.time()
-                GT_data.requires_grad_(False)
                 print("Data size: " + str(GT_data.shape))
                     
+                chans = []
+                if(args['mode'] == "3D"):
+                    for j in range(args['channels']):
+                        LR_data = AvgPool3D(GT_data[:,j:j+1,:,:,:], args['scale_factor'])
+                        chans.append(LR_data)
+                elif(args['mode'] == "2D"):
+                    for j in range(args['channels']):
+                        LR_data = AvgPool2D(GT_data[:,j:j+1,:,:], args['scale_factor'])
+                        chans.append(LR_data)
+                LR_data = torch.cat(chans, dim=1)
 
-                
-                if(opt['downsample_mode'] == "average_pooling"):
-                    chans = []
-                    if(args['mode'] == "3D"):
-                        for j in range(args['channels']):
-                            LR_data = AvgPool3D(GT_data[:,j:j+1,:,:,:], args['scale_factor'])
-                            chans.append(LR_data)
-                    elif(args['mode'] == "2D"):
-                        for j in range(args['channels']):
-                            LR_data = AvgPool2D(GT_data[:,j:j+1,:,:], args['scale_factor'])
-                            chans.append(LR_data)
-                    LR_data = torch.cat(chans, dim=1)
-                elif(opt['downsample_mode'] == "subsampling"):
-                    if(args['mode'] == "3D"):
-                        LR_data = GT_data[:,:,::args['scale_factor'], ::args['scale_factor'],::args['scale_factor']].clone()
-                    elif(args['mode'] == "2D"):
-                        LR_data = GT_data[:,:,::args['scale_factor'], ::args['scale_factor']].clone()
-
-                if opt['scaling_mode'] == "channel" and args['testing_method'] == "model":
-                    mins = []
-                    maxs = []
-                    for c in range(GT_data.shape[1]):
-                        mins.append(GT_data[:,c].min())
-                        maxs.append(GT_data[:,c].max())
-                        LR_data[:,c] -= mins[-1]
-                        LR_data[:,c] *= (1/(maxs[-1]-mins[-1]))
-                if(not args['test_on_gpu']):
-                    GT_data = GT_data.to("cpu")
-                torch.cuda.empty_cache()
-                if(p):
-                    print("Finished downscaling to " + str(LR_data.shape) + ". Performing super resolution")
+                print("Finished downscaling to " + str(LR_data.shape) + ". Performing super resolution")
                 
                 inference_start_time = time.time()
                 if(args['testing_method'] == "model"):
