@@ -57,7 +57,7 @@ def load_models(opt, device):
                         gen_params_compat[k[7:]] = v
                     else:
                         gen_params_compat[k] = v
-                generator, num_kernels = init_gen(i, opt)
+                generator = init_gen(i, opt)
                 generator.load_state_dict(gen_params_compat)
                 generators.append(generator)
 
