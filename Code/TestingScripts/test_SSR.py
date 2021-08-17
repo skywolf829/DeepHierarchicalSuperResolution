@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
     opt["device"] = args["device"]
     opt['data_folder'] = args['data_folder']
-    
+
     generators, _ = load_models(opt,"cpu")
     for i in range(len(generators)):
         generators[i] = generators[i].to(opt['device'])
@@ -267,7 +267,12 @@ if __name__ == '__main__':
         devices = []
         for i in range(torch.cuda.device_count()):
             devices.append("cuda:"+str(i))
+    
+    # Maps SR factor -> upscale mode -> results
+    # I.e. "2x" -> "trilinear" -> "PSNR", etc
+    all_results = {
 
+    }
     d = {
         "inference_time": [],
         "mse": [],
