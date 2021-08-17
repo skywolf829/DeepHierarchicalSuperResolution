@@ -21,13 +21,6 @@ from math import exp
 from typing import Dict, List, Tuple, Optional
 from utility_functions import ssim, ssim3D, save_obj, load_obj
 
-class img_dataset(torch.utils.data.Dataset):
-    def __init__(self, data):
-        self.data = data
-    
-    def __getitem__(self, index):
-        return self.data[index]
-
 
 def mse_func(GT, x, device):
     GT = GT.to(device)
@@ -45,60 +38,6 @@ def mre_func(GT, x, device):
     x = x.to(device)
     data_range = GT.max() - GT.min()
     return (torch.abs(GT-x).max() / data_range)
-
-def mag_func(GT, x, device):
-    GT = GT.to(device)
-    x = x.to(device)
-    return torch.abs(torch.norm(GT, dim=1) - torch.norm(x, dim=1)).mean()
-
-def angle_func(GT, x, device):
-    GT = GT.to(device)
-    x = x.to(device)
-    cs = torch.nn.CosineSimilarity(dim=1).to(device)
-    return (torch.abs(cs(GT,x) - 1) / 2).mean()
-
-def streamline_func(GT, x, device):
-    GT = GT.to(device)
-    x = x.to(device)
-    vals = []
-    for i in range(100):
-        vals.append(streamline_loss3D(GT, x,
-        100, 100, 100, 
-        1, 5, device, False).item())
-    vals = np.array(vals)
-    return vals.mean(), vals.std()
-
-def energy_spectra_func(GT, x, device):
-    GT = GT.to(device)
-    x = x.to(device)
-    print("to be implemented")
-    return 0
-
-def volume_to_imgs(volume, device):
-    imgs = []
-
-    im = volume[0,:,:,:,:].permute(1, 0, 2, 3)
-    im -= volume.min()
-    im *= (255/(volume.max()-volume.min()))#.type(torch.uint8)
-    imgs.append(im)
-
-    im = volume[0,:,:,:,:].permute(2, 0, 1, 3)
-    im -= volume.min()
-    im *= (255/(volume.max()-volume.min()))#.type(torch.uint8)
-    imgs.append(im)
-
-    im = volume[0,:,:,:,:].permute(3, 0, 1, 2)
-    im -= volume.min()
-    im *= (255/(volume.max()-volume.min()))#.type(torch.uint8)
-    imgs.append(im)
-
-    return torch.cat(imgs, dim=0)
-    
-def img_psnr_func(GT, x, device):
-    GT = GT.to(device)
-    x = x.to(device)
-    m = ((GT-x)**2).mean()
-    return (20.0*log(255.0)-10.0*log(m)).item()
 
 def generate_by_patch(generator, input_volume, patch_size, receptive_field, device):
     with torch.no_grad():
@@ -287,50 +226,35 @@ if __name__ == '__main__':
 
     
     parser.add_argument('--mode',default="3D",type=str,help='2D or 3D')
-    parser.add_argument('--testing_method',default="model",type=str,help='What method to test, model or trilinear')
-    parser.add_argument('--scale_factor',default=2,type=int,help='2x, 4x, 8x... what the model supports')
-    parser.add_argument('--full_resolution',default=1024,type=int,help='The full resolution of the frame')
-    parser.add_argument('--channels',default=3,type=int,help='Number of channels in the data')
-    parser.add_argument('--data_folder',default="iso1024",type=str,help='Name of folder with test data in /TestingData')
+    parser.add_argument('--data_folder',default="iso1024",type=str,help='Name of dataset to test')
     parser.add_argument('--model_name',default="SSR",type=str,help='The folder with the model to load')
-    parser.add_argument('--device',default="cpu",type=str,help='Device to use for testing')
+    parser.add_argument('--device',default="cuda:0",type=str,help='Device to use for testing')
     parser.add_argument('--parallel',default="False",type=str2bool,help='Perform SR in parallel')
-    parser.add_argument('--print',default="True",type=str2bool,help='Print output during testing')
-    parser.add_argument('--debug',default="False",type=str2bool,help='Use fake data during testing instead of loading')
     parser.add_argument('--test_on_gpu',default="True",type=str2bool,help='Metrics calculated on GPU?')
-    parser.add_argument('--fix_dim_order',default="False",type=str2bool,help='True if channels are last')
 
     parser.add_argument('--test_mse',default="True",type=str2bool,help='Enables tests for mse')
     parser.add_argument('--test_psnr',default="True",type=str2bool,help='Enables tests for mse')
-    parser.add_argument('--test_amd',default="False",type=str2bool,help='Enables tests for average magnitude difference')
-    parser.add_argument('--test_aad',default="False",type=str2bool,help='Enables tests for average angle difference')
     parser.add_argument('--test_mre',default="True",type=str2bool,help='Enables tests for maximum relative error')
     parser.add_argument('--test_ssim',default="True",type=str2bool,help='Enables tests for maximum relative error')
-    parser.add_argument('--test_streamline',default="False",type=str2bool,help='Enables streamline error tests')
-
-    parser.add_argument('--test_img_psnr',default="False",type=str2bool,help='Enables tests for image PSNR score')
-    parser.add_argument('--test_img_ssim',default="False",type=str2bool,help='Enables tests for image SSIM score')
-    parser.add_argument('--test_img_fid',default="False",type=str2bool,help='Enables tests for image FID score')
 
     parser.add_argument('--save_name',default="SSR",type=str,help='Where to write results')
     parser.add_argument('--output_file_name',default="SSR.pkl",type=str,help='Where to write results')
     
     args = vars(parser.parse_args())
 
-    p = args['print']
 
-    FlowSTSR_folder_path = os.path.dirname(os.path.abspath(__file__))
-    input_folder = os.path.join(FlowSTSR_folder_path, "TestingData", args['data_folder'])
-    save_folder = os.path.join(FlowSTSR_folder_path, "SavedModels")
-    output_folder = os.path.join(FlowSTSR_folder_path, "Output")
-    if(p):
-        print("Loading options and model")
-        print("full resolution: " + str(args['full_resolution']))
-        print("channels: " + str(args['channels']))
+    project_folder_path = os.path.dirname(os.path.abspath(__file__))
+    project_folder_path = os.path.join(project_folder_path, "..")
+    data_folder = os.path.join(project_folder_path, "Data", "SuperResolutionData")
+    output_folder = os.path.join(project_folder_path, "Output")
+    save_folder = os.path.join(project_folder_path, "SavedModels")
+
+    print("Loading options and model")
     opt = load_options(os.path.join(save_folder, args["model_name"]))
-    opt['cropping_resolution'] = args['full_resolution']
+
     opt["device"] = args["device"]
-    opt['data_folder'] = "TestingData/"+args['data_folder']
+    opt['data_folder'] = args['data_folder']
+    
     generators, _ = load_models(opt,"cpu")
     for i in range(len(generators)):
         generators[i] = generators[i].to(opt['device'])

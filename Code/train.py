@@ -1,7 +1,7 @@
 from __future__ import absolute_import, division, print_function
 import argparse
 from datasets import TrainingDataset
-from datetime import datetime
+import datetime
 from utility_functions import AvgPool2D, AvgPool3D, print_to_log_and_console, reset_grads, str2bool, toImg
 from models import calc_gradient_penalty, init_discrim, init_gen, init_scales, load_models, save_models
 import torch
