@@ -196,7 +196,7 @@ class Generator(nn.Module):
         self.opt = opt
         if(opt['mode'] == "2D"):
             conv_layer = nn.Conv2d
-            self.pix_shuffle = nn.PixelShuffle(opt['SR_per_model'])
+            self.pix_shuffle = nn.PixelShuffle(2)
         elif(opt['mode'] == "3D"):
             conv_layer = nn.Conv3d
 
@@ -212,9 +212,9 @@ class Generator(nn.Module):
 
         # Upscaling happens between 2 and 3
         if(self.opt['mode'] == "2D"):
-            fact = opt['SR_per_model']**2
+            fact = 4
         elif(self.opt['mode'] == "3D"):
-            fact = opt['SR_per_model']**3
+            fact = 8
         if(self.opt['upsample_mode'] == "shuffle"):
             self.c2_vs = conv_layer(opt['num_kernels'], opt['num_kernels']*fact,
             stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
