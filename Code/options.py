@@ -5,51 +5,26 @@ class Options():
     def get_default():
         opt = {}
         # Input info
-        opt["mode"]                    = "3D"      # What SinGAN to use - 2D or 3D
-        opt["data_folder"]             = "InputData/iso1024"
-        opt['scaling_mode']            = None # magnitude, channel, learned, none
-        opt['load_data_at_start']      = False
-        opt['single_shot']            =  False
+        opt["mode"]                    = "3D"      # 2D or 3D
+        opt["data_folder"]             = "Isomag3D"
         opt["save_folder"]             = "SavedModels"
         opt["save_name"]               = "Temp"    # Folder that the model will be saved to
         opt["num_channels"]            = 1
-        opt["spatial_downscale_ratio"] = 0.5       # Spatial downscale ratio between levels
         opt["min_dimension_size"]      = 16        # Smallest a dimension can go to upscale from
         opt["cropping_resolution"]     = 96
         opt["train_date_time"]         = None      # The day/time the model was trained (finish time)
-        opt['training_data_amount']    = 1.0
-        opt['coarse_training']         = 1
 
-        opt['dataset_name']            = "isotropic1024coarse"
-        opt['num_dataset_timesteps']   = 100
-        opt['x_resolution']            = 1024
-        opt['y_resolution']            = 1024
-        opt['z_resolution']            = 1
-        opt['ts_skip']                 = 10
-        opt['num_dims']                = 3
         opt['random_flipping']         = True
-        opt['num_networked_workers']   = 4
-
         opt["num_workers"]             = 2
 
         # generator info
         opt["num_blocks"]              = 3
         opt['num_discrim_blocks']      = 5
         opt["base_num_kernels"]        = 96        # Num of kernels in smallest scale conv layers
-        opt["pre_padding"]             = False         # Padding on conv layers in the GAN
         opt["kernel_size"]             = 3
         opt["padding"]                 = 1
         opt["stride"]                  = 1
-        opt['conv_groups']             = 1
-        opt['SR_per_model']            = 2
-        opt['separate_chans']          = False
         opt['B']                      = 0.2
-
-        opt['num_lstm_layers']         = 3
-        opt['training_seq_length']     = 3
-        opt['temporal_direction']     = "forward"
-        opt['temporal_generator']     = "TSRTVD"
-
 
         opt["n"]                       = 0         # Number of scales in the heirarchy, defined by the input and min_dimension_size
         opt["resolutions"]             = []        # The scales for the GAN
@@ -64,24 +39,13 @@ class Options():
 
         opt["save_generators"]         = True
         opt["save_discriminators"]     = True
-        opt["physical_constraints"]    = "none"
-        opt["patch_size"]              = 128
+        opt["patch_size"]              = 96
         opt["training_patch_size"]     = 96
-        opt["regularization"]          = "GP" #Either TV (total variation) or GP (gradient penalty) or SN 
 
         # GAN training info
         opt["alpha_1"]                 = 1       # Reconstruction loss coefficient
         opt["alpha_2"]                 = 0.1        # Adversarial loss coefficient
-        opt["alpha_3"]                 = 0        # Soft physical loss coefficient
-        opt["alpha_4"]                 = 0        # mag_and_angle loss
-        opt["alpha_5"]                 = 0          # first derivative loss coeff
-        opt["alpha_6"]                 = 0         # Lagrangian transport loss
 
-        opt["adaptive_streamlines"]    = False
-        opt['streamline_res']          = 100
-        opt['streamline_length']       = 5
-
-        opt['periodic']                = False
         opt["generator_steps"]         = 1
         opt["discriminator_steps"]     = 1
         opt["epochs"]                  = 50
