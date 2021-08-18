@@ -1152,6 +1152,90 @@ def h5_to_nodelist(name: str, device : str):
         )
     return nodes
 
+def tthresh_compress(nodes: OctreeNodeList, full_shape, max_LOD,
+downscaling_technique, device, mode,
+folder : str, name : str, metric : str, value: float):
+    min_LOD = max_LOD
+    for i in range(len(nodes)):
+        min_LOD = min(nodes[i].LOD, min_LOD)
+    
+    if(mode == "2D"):
+        full_im = torch.zeros([1, full_shape[1], 
+        int(full_shape[2] / (2**min_LOD)), int(full_shape[3] / (2**min_LOD))], dtype=torch.float32)
+    elif(mode == "3D"):
+        full_im = torch.zeros([1, full_shape[1], 
+        int(full_shape[2] / (2**min_LOD)), 
+        int(full_shape[3] / (2**min_LOD)),
+        int(full_shape[4] / (2**min_LOD))], dtype=torch.float32)
+
+    full_im += nodes.mean().numpy()
+
+    for i in range(len(nodes)):
+        n = nodes[i]
+        if(mode == "2D"):
+            x, y = get_location2D(full_shape[2], full_shape[3], 
+            n.depth, n.index)
+            x = int(x / (2**min_LOD))
+            y = int(y / (2**min_LOD))
+            width = n.data.shape[2] 
+            height = n.data.shape[3]
+            full_im[:,:,x:x+width,y:y+height] = n.data
+
+        elif(mode == "3D"):
+            x, y, z = get_location3D(full_shape[2], full_shape[3], full_shape[4],
+            n.depth, n.index)
+            x = int(x / (2**min_LOD))
+            y = int(y / (2**min_LOD))
+            z = int(z / (2**min_LOD))
+            width = n.data.shape[2] 
+            height = n.data.shape[3]
+            d = n.data.shape[4]
+            full_im[:,:,x:x+width,y:y+height,z:z+d] = n.data
+            
+    temp_folder_path = os.path.join(folder, "Temp")
+    save_location = os.path.join(folder, name +".tar.gz")
+    if(not os.path.exists(temp_folder_path)):
+        os.makedirs(temp_folder_path)
+    if(mode == "2D"):
+        imageio.imwrite(os.path.join(folder,name+"compressed.png"), np.transpose(full_im[0], (1, 2, 0)))
+    for i in range(full_im.shape[1]):
+        d = full_im.cpu().numpy()[0,i]
+        d_loc = os.path.join(temp_folder_path,"nn_data_"+str(i)+".dat")
+        ndims = len(d.shape)
+        print(d.shape)
+        d.tofile(d_loc)
+        command = "tthresh -i " + d_loc + " -s " + \
+            str(d.shape[0]) + " " + str(d.shape[1])
+        if(ndims == 3):
+            command = command + " " + str(d.shape[2])
+
+        command = command + " -p " + str(value)
+        command = command + " -c " + d_loc + ".tthresh"
+        print(command)
+        os.system(command)
+        os.system("rm " + d_loc)
+    
+    del full_im
+
+    metadata : List[int] = []
+    metadata.append(min_LOD)
+    metadata.append(len(full_shape))
+    metadata.append(full_shape[0])
+    metadata.append(full_shape[1])
+    for i in range(2,len(full_shape)):
+        metadata.append(int(full_shape[i]/(2**min_LOD)))
+    for i in range(len(nodes)):
+        metadata.append(nodes[i].depth)
+        metadata.append(nodes[i].index)
+        metadata.append(nodes[i].LOD)
+
+    metadata = np.array(metadata, dtype=int)
+    metadata.tofile(os.path.join(temp_folder_path, "metadata"))
+
+    os.system("tar -cjvf " + save_location + " -C " + folder + " Temp")
+    os.system("rm -r " + temp_folder_path)
+
+
 def sz_compress(nodes: OctreeNodeList, full_shape, max_LOD,
 downscaling_technique, device, mode,
 folder : str, name : str, metric : str, value : float):
@@ -1279,6 +1363,77 @@ def sz_decompress(filename : str, device : str):
         os.system(command)
 
         full_data = np.fromfile(os.path.join(temp_folder, "nn_data_"+str(i)+".dat.sz.out"), 
+        dtype=np.float32)
+        full_data = np.reshape(full_data, full_shape[2:])
+        
+        full_data = torch.Tensor(full_data)
+        data_channels.append(full_data)
+
+    #print(full_shape)
+    full_data = torch.stack(data_channels).unsqueeze(0)
+    for i in range(0, len(metadata), 3):
+        depth = metadata[i]
+        index = metadata[i+1]
+        lod = metadata[i+2]
+        if(len(full_shape) == 4):
+            x, y = get_location2D(int(full_shape[2]*(2**min_LOD)), int(full_shape[3]*(2**min_LOD)), 
+            depth, index)
+            x = int(x / (2**min_LOD))
+            y = int(y / (2**min_LOD))
+            width = int(full_shape[2] / (2**(depth+lod-min_LOD)))
+            height = int(full_shape[3] / (2**(depth+lod-min_LOD)))
+            data = full_data[:,:,x:x+width,y:y+height]
+
+        elif(len(full_shape) == 5):
+            x, y, z = get_location3D(int(full_shape[2]*(2**min_LOD)), 
+            int(full_shape[3]*(2**min_LOD)), int(full_shape[4]*(2**min_LOD)), 
+            depth, index)
+            x = int(x / (2**min_LOD))
+            y = int(y / (2**min_LOD))
+            z = int(z / (2**min_LOD))
+            width = int(full_shape[2] / (2**(depth+lod-min_LOD)))
+            height = int(full_shape[3] / (2**(depth+lod-min_LOD)))
+            d = int(full_shape[4] / (2**(depth+lod-min_LOD)))
+            data = full_data[:,:,x:x+width,y:y+height,z:z+d]
+        
+        #print("Node %i: depth %i index %i lod %i, data shape %s" % (i, depth, index, lod, str(data.shape)))
+        #print(str(x) + " " + str(y))
+        n = OctreeNode(data.to(device), lod, depth, index)
+        nodes.append(n)
+    del full_data
+    os.system("rm -r " + temp_folder)
+    print("Finished decompressing, " + str(len(nodes)) + " blocks recovered")
+    return nodes
+
+def tthresh_decompress(filename : str, device : str):
+    print("Decompressing " + filename + " with tthresh method")
+    folder_path = os.path.dirname(os.path.abspath(__file__))
+    temp_folder = os.path.join(folder_path, "Temp")
+    if(not os.path.exists(temp_folder)):
+        os.makedirs(temp_folder)
+    
+    nodes = OctreeNodeList()
+
+    os.system("tar -xvf " + filename)
+    metadata = np.fromfile(os.path.join(temp_folder, "metadata"), dtype=int)
+    min_LOD = metadata[0]
+    full_shape = []
+    for i in range(2, metadata[1]+2):
+        full_shape.append(metadata[i])
+        
+    metadata = metadata[metadata[1]+2:]
+    
+    data_channels = []
+    for i in range(full_shape[1]):
+        command = "sz -c " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh") + \
+            + " -o " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh.out")
+
+        if(len(full_shape) == 5):
+            command = command + " " + str(full_shape[4])
+        print(command)
+        os.system(command)
+
+        full_data = np.fromfile(os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh.out"), 
         dtype=np.float32)
         full_data = np.reshape(full_data, full_shape[2:])
         
@@ -1501,7 +1656,10 @@ if __name__ == '__main__':
                         save_folder, save_name,
                         criterion, p)
                 elif(args['compressor'] == "tthresh"):
-                    print("Todo")
+                    tthresh_compress(nodes, full_shape, max_LOD,
+                        downscaling_technique, device, mode,
+                        save_folder, save_name,
+                        criterion, p)
             else:
                 torch.save(nodes, os.path.join(save_folder,
                     save_name+".torch"))
@@ -1510,7 +1668,7 @@ if __name__ == '__main__':
             if(args['compressor'] == "sz"):                
                 nodes = sz_decompress(os.path.join(save_folder,save_name + ".tar.gz"), device)
             elif(args['compressor'] == "tthresh"):                
-                print("Todo")
+                nodes = tthresh_decompress(os.path.join(save_folder,save_name + ".tar.gz"), device)
         else:
             nodes : OctreeNodeList = torch.load(os.path.join(save_folder,
                 save_name+".torch"))
