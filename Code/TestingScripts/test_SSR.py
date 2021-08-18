@@ -1,3 +1,7 @@
+import sys
+import os.path
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 from models import load_models
 from options import  load_options
 from utility_functions import  str2bool, AvgPool3D, AvgPool2D
