@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-from models import load_models
+from Code.models import load_models
 from options import  load_options
 from utility_functions import  str2bool, AvgPool3D, AvgPool2D
 import os
