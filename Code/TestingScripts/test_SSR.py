@@ -338,7 +338,7 @@ if __name__ == '__main__':
                 print("Finished super resolving in %0.04f seconds. Final shape: %s. Performing tests." % \
                     (inference_this_frame, str(LR_data.shape)))
                 frame_results = get_test_results(GT_data, x, args['mode'])
-                print(frame_results)
+                print("Model: " + str(frame_results))
                 this_scale_results["model"]['Upscaling time'].append(inference_this_frame)
                 for k in frame_results.keys():
                     this_scale_results["model"][k].append(frame_results[k])
@@ -347,16 +347,16 @@ if __name__ == '__main__':
                 inference_start_time = time.time()
                 x = LR_data.clone()
                 if(args['mode'] == "3D"):
-                    x = F.interpolate(x, scale_factor=args['scale_factor'], 
+                    x = F.interpolate(x, scale_factor=2**(scale+1), 
                     mode="trilinear", align_corners=True)
                 elif(args['mode'] == '2D'):
-                    x = F.interpolate(x, scale_factor=args['scale_factor'], 
+                    x = F.interpolate(x, scale_factor=2**(scale+1), 
                     mode=args['testing_method'], align_corners=True)
                 inference_end_time = time.time()                
                 inference_this_frame = inference_end_time - inference_start_time
 
                 frame_results = get_test_results(GT_data, x, args['mode'])
-                print(frame_results)
+                print("Interpolation: " + str(frame_results))
                 this_scale_results[interp]['Upscaling time'].append(inference_this_frame)
                 for k in frame_results.keys():
                     this_scale_results[interp][k].append(frame_results[k])
