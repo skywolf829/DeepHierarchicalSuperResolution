@@ -348,10 +348,10 @@ if __name__ == '__main__':
                 x = LR_data.clone()
                 if(args['mode'] == "3D"):
                     x = F.interpolate(x, scale_factor=2**(scale+1), 
-                    mode="trilinear", align_corners=True)
+                    mode=interp, align_corners=True)
                 elif(args['mode'] == '2D'):
                     x = F.interpolate(x, scale_factor=2**(scale+1), 
-                    mode=args['testing_method'], align_corners=True)
+                    mode=interp, align_corners=True)
                 inference_end_time = time.time()                
                 inference_this_frame = inference_end_time - inference_start_time
 
