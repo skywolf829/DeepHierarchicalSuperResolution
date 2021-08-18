@@ -3,7 +3,7 @@
 export PATH="$HOME/sz/bin:$PATH"
 #export PATH="$HOME/zfp/bin:$PATH"
 #export PATH="$HOME/fpzip/bin:$PATH"
-#export PATH="$HOME/tthresh/build:$PATH"
+export PATH="$HOME/tthresh/build:$PATH"
 
 # Isomag2D
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2D \
