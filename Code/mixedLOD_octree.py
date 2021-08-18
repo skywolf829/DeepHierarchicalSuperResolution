@@ -1,25 +1,21 @@
 import imageio
 import numpy as np
 import torch
-from torch._C import ScriptModule
+import torch.nn as nn
 import torch.nn.functional as F
-from math import log2
 import torch.jit
-from torch.nn.modules.module import T
 from utility_functions import *
 import time
 from typing import Dict, List, Tuple, Optional
 import h5py
-from spatial_models import load_models
+from models import load_models
 from options import load_options
 import argparse
-import pickle
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import copy
-from utility_functions import save_obj, load_obj, ssim, ssim3D, to_img
-from pytorch_memlab import LineProfiler
+from utility_functions import save_obj, load_obj, ssim, ssim3D, toImg
 
 @torch.jit.script
 class OctreeNode:
@@ -1156,200 +1152,9 @@ def h5_to_nodelist(name: str, device : str):
         )
     return nodes
 
-'''
-def sz_compress_nodelist(nodes: OctreeNodeList, full_shape, max_LOD,
-downscaling_technique, device, mode,
-folder : str, name : str, metric : str, value : float):
-    
-    nearest_upscale = UpscalingMethod("nearest", device)
-    data_levels, mask_levels, data_downscaled_levels, mask_downscaled_levels = \
-            create_caches_from_nodelist(nodes, full_shape, max_LOD, device, mode)
-
-    full_im = nodes_to_full_img(nodes, full_shape, max_LOD, nearest_upscale,
-    downscaling_technique, device, data_levels, mask_levels,
-    data_downscaled_levels, mask_downscaled_levels, mode)
-    min_LOD = max_LOD
-    for i in range(len(nodes)):
-        min_LOD = min(nodes[i].LOD, min_LOD)
-    if(min_LOD > 0):
-        if(mode == "2D"):
-            full_im = subsample_downscale2D(full_im, int(2**min_LOD))
-        elif(mode == "3D"):
-            full_im = subsample_downscale3D(full_im, int(2**min_LOD))
-    temp_folder_path = os.path.join(folder, "Temp")
-    save_location = os.path.join(folder, name +".tar.gz")
-    if(not os.path.exists(temp_folder_path)):
-        os.makedirs(temp_folder_path)
-    
-    for i in range(full_im.shape[1]):
-        d = full_im.cpu().numpy()[0,i]
-        d_loc = os.path.join(temp_folder_path,"nn_data_"+str(i)+".dat")
-        ndims = len(d.shape)
-        print(d.shape)
-        d.tofile(d_loc)
-        command = "sz -z -f -i " + d_loc + " -" + str(ndims) + " " + \
-            str(d.shape[0]) + " " + str(d.shape[1])
-        if(ndims == 3):
-            command = command + " " + str(d.shape[2])
-        
-        if(min_LOD == 0):
-            if(metric == "psnr"):
-                command = command + " -M PSNR -S " + str(value)
-            elif(metric == "mre"):
-                command = command + " -M REL -R " + str(value)
-            elif(metric == "pw_mre"):
-                command = command + " -M PW_REL -P " + str(value)
-        else:
-            command = command + " -M PW_REL -P 0.001"
-        
-        #command = command + " -M PW_REL -P 0.001"
-        max_diff = nodes.max() - nodes.min()
-        REL_target = (max_diff / (10**(value/10))) **0.5
-        #command = command + " -M REL -R " + str(REL_target)
-        #command = command + " -M REL -R 0.0025"
-        command = command + " -M PW_REL -P " + str(REL_target)
-        print(command)
-        os.system(command)
-        os.system("rm " + d_loc)
-    
-    del full_im
-
-    metadata : List[int] = []
-    metadata.append(min_LOD)
-    metadata.append(len(full_shape))
-    metadata.append(full_shape[0])
-    metadata.append(full_shape[1])
-    for i in range(2,len(full_shape)):
-        metadata.append(int(full_shape[i]/(2**min_LOD)))
-    for i in range(len(nodes)):
-        metadata.append(nodes[i].depth)
-        metadata.append(nodes[i].index)
-        metadata.append(nodes[i].LOD)
-
-    metadata = np.array(metadata, dtype=int)
-    metadata.tofile(os.path.join(temp_folder_path, "metadata"))
-
-    os.system("tar -cjvf " + save_location + " -C " + folder + " Temp")
-    os.system("rm -r " + temp_folder_path)
-'''
-def zfp_compress_nodelist(nodes: OctreeNodeList, full_shape, max_LOD,
-downscaling_technique, device, mode,
-folder : str, name : str):
-    
-    nearest_upscale = UpscalingMethod("nearest", device)
-    data_levels, mask_levels, data_downscaled_levels, mask_downscaled_levels = \
-            create_caches_from_nodelist(nodes, full_shape, max_LOD, device, mode)
-
-    full_im = nodes_to_full_img(nodes, full_shape, max_LOD, nearest_upscale,
-    downscaling_technique, device, data_levels, mask_levels,
-    data_downscaled_levels, mask_downscaled_levels, mode)
-    min_LOD = max_LOD
-    for i in range(len(nodes)):
-        min_LOD = min(nodes[i].LOD, min_LOD)
-    if(min_LOD > 0):
-        if(mode == "2D"):
-            full_im = subsample_downscale2D(full_im, int(2**min_LOD))
-        elif(mode == "3D"):
-            full_im = subsample_downscale3D(full_im, int(2**min_LOD))
-    temp_folder_path = os.path.join(folder, "Temp")
-    save_location = os.path.join(folder, name +".tar.gz")
-    if(not os.path.exists(temp_folder_path)):
-        os.makedirs(temp_folder_path)
-    
-
-    d = full_im.cpu().numpy()[0,0]
-    d_loc = os.path.join(temp_folder_path,"nn_data.dat")
-    ndims = len(d.shape)
-    print(d.shape)
-    d.tofile(d_loc)
-    command = "zfp -f -R -i " + d_loc + " -o " +\
-        d_loc + ".zfp" + " -" + str(ndims) + " " + \
-        str(d.shape[0]) + " " + str(d.shape[1])
-    if(ndims == 3):
-        command = command + " " + str(d.shape[2])
-    print(command)
-    os.system(command)
-    os.system("rm " + d_loc)
-    
-    metadata : List[int] = []
-    metadata.append(min_LOD)
-    metadata.append(len(full_shape))
-    metadata.append(full_shape[0])
-    metadata.append(full_shape[1])
-    for i in range(2,len(full_shape)):
-        metadata.append(int(full_shape[i]/(2**min_LOD)))
-    for i in range(len(nodes)):
-        metadata.append(nodes[i].depth)
-        metadata.append(nodes[i].index)
-        metadata.append(nodes[i].LOD)
-
-    metadata = np.array(metadata, dtype=int)
-    metadata.tofile(os.path.join(temp_folder_path, "metadata"))
-
-    os.system("tar -cjvf " + save_location + " -C " + folder + " Temp")
-    os.system("rm -r " + temp_folder_path)
-
-def fpzip_compress_nodelist(nodes: OctreeNodeList, full_shape, max_LOD,
-downscaling_technique, device, mode,
-folder : str, name : str):
-    
-    nearest_upscale = UpscalingMethod("nearest", device)
-    data_levels, mask_levels, data_downscaled_levels, mask_downscaled_levels = \
-            create_caches_from_nodelist(nodes, full_shape, max_LOD, device, mode)
-
-    full_im = nodes_to_full_img(nodes, full_shape, max_LOD, nearest_upscale,
-    downscaling_technique, device, data_levels, mask_levels,
-    data_downscaled_levels, mask_downscaled_levels, mode)
-    min_LOD = max_LOD
-    for i in range(len(nodes)):
-        min_LOD = min(nodes[i].LOD, min_LOD)
-    if(min_LOD > 0):
-        if(mode == "2D"):
-            full_im = subsample_downscale2D(full_im, int(2**min_LOD))
-        elif(mode == "3D"):
-            full_im = subsample_downscale3D(full_im, int(2**min_LOD))
-    temp_folder_path = os.path.join(folder, "Temp")
-    save_location = os.path.join(folder, name +".tar.gz")
-    if(not os.path.exists(temp_folder_path)):
-        os.makedirs(temp_folder_path)
-    
-
-    d = full_im.cpu().numpy()[0,0]
-    d_loc = os.path.join(temp_folder_path,"nn_data.dat")
-    ndims = len(d.shape)
-    print(d.shape)
-    d.tofile(d_loc)
-    command = "fpzip -t float -i " + d_loc + " -o " +\
-        d_loc + ".fpzip" + " -" + str(ndims) + " " + \
-        str(d.shape[0]) + " " + str(d.shape[1])
-    if(ndims == 3):
-        command = command + " " + str(d.shape[2])
-    print(command)
-    os.system(command)
-    os.system("rm " + d_loc)
-    
-    metadata : List[int] = []
-    metadata.append(min_LOD)
-    metadata.append(len(full_shape))
-    metadata.append(full_shape[0])
-    metadata.append(full_shape[1])
-    for i in range(2,len(full_shape)):
-        metadata.append(int(full_shape[i]/(2**min_LOD)))
-    for i in range(len(nodes)):
-        metadata.append(nodes[i].depth)
-        metadata.append(nodes[i].index)
-        metadata.append(nodes[i].LOD)
-
-    metadata = np.array(metadata, dtype=int)
-    metadata.tofile(os.path.join(temp_folder_path, "metadata"))
-
-    os.system("tar -cjvf " + save_location + " -C " + folder + " Temp")
-    os.system("rm -r " + temp_folder_path)
-
 def sz_compress(nodes: OctreeNodeList, full_shape, max_LOD,
 downscaling_technique, device, mode,
 folder : str, name : str, metric : str, value : float):
-    
     
     min_LOD = max_LOD
     for i in range(len(nodes)):
@@ -1516,195 +1321,6 @@ def sz_decompress(filename : str, device : str):
     print("Finished decompressing, " + str(len(nodes)) + " blocks recovered")
     return nodes
 
-def sz_decompress_nodelist(filename : str, device : str):
-    print("Decompressing " + filename + " with sz method")
-    folder_path = os.path.dirname(os.path.abspath(__file__))
-    temp_folder = os.path.join(folder_path, "Temp")
-    if(not os.path.exists(temp_folder)):
-        os.makedirs(temp_folder)
-    
-    nodes = OctreeNodeList()
-
-    os.system("tar -xvf " + filename)
-    metadata = np.fromfile(os.path.join(temp_folder, "metadata"), dtype=int)
-    min_LOD = metadata[0]
-    full_shape = []
-    for i in range(2, metadata[1]+2):
-        full_shape.append(metadata[i])
-        
-    metadata = metadata[metadata[1]+2:]
-    
-    data_channels = []
-    for i in range(full_shape[1]):
-        command = "sz -x -f -s " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.sz") + " -" + \
-            str(len(full_shape[2:])) + " " + str(full_shape[2]) + " " + str(full_shape[3])
-
-        if(len(full_shape) == 5):
-            command = command + " " + str(full_shape[4])
-        print(command)
-        os.system(command)
-
-        full_data = np.fromfile(os.path.join(temp_folder, "nn_data_"+str(i)+".dat.sz.out"), 
-        dtype=np.float32)
-        full_data = np.reshape(full_data, full_shape[2:])
-        
-        full_data = torch.Tensor(full_data)
-        data_channels.append(full_data)
-
-    full_data = torch.stack(data_channels).unsqueeze(0)
-    nearest_upscale = UpscalingMethod("nearest", device)
-
-    full_data = nearest_upscale(full_data, int(2**min_LOD))
-    for i in range(0, len(metadata), 3):
-        depth = metadata[i]
-        index = metadata[i+1]
-        lod = metadata[i+2]
-        if(len(full_shape) == 4):
-            x, y = get_location2D(full_data.shape[2], full_data.shape[3], 
-            depth, index)
-            width = int(full_data.shape[2] / (2**depth))
-            height = int(full_data.shape[3] / (2**depth))
-            data = full_data[:,:,x:x+width,y:y+height]
-            data = avgpool_downscale2D(data, int(2**lod))
-
-        elif(len(full_shape) == 5):
-            x, y, z = get_location3D(full_data.shape[2], full_data.shape[3], full_data.shape[4], 
-            depth, index)
-            width = int(full_data.shape[2] / (2**depth))
-            height = int(full_data.shape[3] / (2**depth))
-            d = int(full_data.shape[4] / (2**depth))
-            data = full_data[:,:,x:x+width,y:y+height,z:z+d]
-            data = avgpool_downscale3D(data, int(2**lod))
-        
-        n = OctreeNode(data.to(device), lod, depth, index)
-        nodes.append(n)
-    del full_data
-    os.system("rm -r " + temp_folder)
-    print("Finished decompressing, " + str(len(nodes)) + " blocks recovered")
-    return nodes
-
-def zfp_decompress_nodelist(filename : str, device : str):
-    print("Decompressing " + filename + " with zfp method")
-    folder_path = os.path.dirname(os.path.abspath(__file__))
-    temp_folder = os.path.join(folder_path, "Temp")
-    if(not os.path.exists(temp_folder)):
-        os.makedirs(temp_folder)
-    
-    nodes = OctreeNodeList()
-
-    os.system("tar -xvf " + filename)
-    metadata = np.fromfile(os.path.join(temp_folder, "metadata"), dtype=int)
-    min_LOD = metadata[0]
-    full_shape = []
-    for i in range(2, metadata[1]+2):
-        full_shape.append(metadata[i])
-        
-    metadata = metadata[metadata[1]+2:]
-    command = "zfp -f -R -z " + os.path.join(temp_folder, "nn_data.dat.zfp") + " -o " + \
-        os.path.join(temp_folder, "nn_data.dat.zfp.out")+ " -" + \
-        str(len(full_shape[2:])) + " " + str(full_shape[2]) + " " + str(full_shape[3])
-
-    if(len(full_shape) == 5):
-        command = command + " " + str(full_shape[4])
-    print(command)
-    os.system(command)
-
-    full_data = np.fromfile(os.path.join(temp_folder, "nn_data.dat.zfp.out"), dtype=np.float32)
-    print(full_data.shape)
-    full_data = np.reshape(full_data, full_shape[2:])
-    print(full_data.shape)
-    full_data = torch.Tensor(full_data).unsqueeze(0).unsqueeze(0)
-    nearest_upscale = UpscalingMethod("nearest", device)
-
-    full_data = nearest_upscale(full_data, int(2**min_LOD))
-    print(full_data.shape)
-    for i in range(0, len(metadata), 3):
-        depth = metadata[i]
-        index = metadata[i+1]
-        lod = metadata[i+2]
-        if(len(full_shape) == 4):
-            x, y = get_location2D(full_data.shape[2], full_data.shape[3], 
-            depth, index)
-            width = int(full_data.shape[2] / (2**depth))
-            height = int(full_data.shape[3] / (2**depth))
-            data = full_data[:,:,x:x+width,y:y+height]
-            data = avgpool_downscale2D(data, int(2**lod))
-
-        elif(len(full_shape) == 5):
-            x, y, z = get_location3D(full_data.shape[2], full_data.shape[3], full_data.shape[4], 
-            depth, index)
-            width = int(full_data.shape[2] / (2**depth))
-            height = int(full_data.shape[3] / (2**depth))
-            d = int(full_data.shape[4] / (2**depth))
-            data = full_data[:,:,x:x+width,y:y+height,z:z+d]
-            data = avgpool_downscale3D(data, int(2**lod))
-        
-        n = OctreeNode(data.to(device), lod, depth, index)
-        nodes.append(n)
-    os.system("rm -r " + temp_folder)
-    print("Finished decompressing, " + str(len(nodes)) + " blocks recovered")
-    return nodes
-
-def fpzip_decompress_nodelist(filename : str, device : str):
-    print("Decompressing " + filename + " with fpzip method")
-    folder_path = os.path.dirname(os.path.abspath(__file__))
-    temp_folder = os.path.join(folder_path, "Temp")
-    if(not os.path.exists(temp_folder)):
-        os.makedirs(temp_folder)
-    
-    nodes = OctreeNodeList()
-
-    os.system("tar -xvf " + filename)
-    metadata = np.fromfile(os.path.join(temp_folder, "metadata"), dtype=int)
-    min_LOD = metadata[0]
-    full_shape = []
-    for i in range(2, metadata[1]+2):
-        full_shape.append(metadata[i])
-        
-    metadata = metadata[metadata[1]+2:]
-    command = "fpzip -d -t float -i " + os.path.join(temp_folder, "nn_data.dat.fpzip") + " -o " + \
-        os.path.join(temp_folder, "nn_data.dat.fpzip.out")+ " -" + \
-        str(len(full_shape[2:])) + " " + str(full_shape[2]) + " " + str(full_shape[3])
-
-    if(len(full_shape) == 5):
-        command = command + " " + str(full_shape[4])
-    print(command)
-    os.system(command)
-
-    full_data = np.fromfile(os.path.join(temp_folder, "nn_data.dat.fpzip.out"), dtype=np.float32)
-    full_data = np.reshape(full_data, full_shape[2:])
-    
-    full_data = torch.Tensor(full_data).unsqueeze(0).unsqueeze(0)
-    nearest_upscale = UpscalingMethod("nearest", device)
-
-    full_data = nearest_upscale(full_data, int(2**min_LOD))
-    for i in range(0, len(metadata), 3):
-        depth = metadata[i]
-        index = metadata[i+1]
-        lod = metadata[i+2]
-        if(len(full_shape) == 4):
-            x, y = get_location2D(full_data.shape[2], full_data.shape[3], 
-            depth, index)
-            width = int(full_data.shape[2] / (2**depth))
-            height = int(full_data.shape[3] / (2**depth))
-            data = full_data[:,:,x:x+width,y:y+height]
-            data = avgpool_downscale2D(data, int(2**lod))
-
-        elif(len(full_shape) == 5):
-            x, y, z = get_location3D(full_data.shape[2], full_data.shape[3], full_data.shape[4], 
-            depth, index)
-            width = int(full_data.shape[2] / (2**depth))
-            height = int(full_data.shape[3] / (2**depth))
-            d = int(full_data.shape[4] / (2**depth))
-            data = full_data[:,:,x:x+width,y:y+height,z:z+d]
-            data = avgpool_downscale3D(data, int(2**lod))
-        
-        n = OctreeNode(data.to(device), lod, depth, index)
-        nodes.append(n)
-    os.system("rm -r " + temp_folder)
-    print("Finished decompressing, " + str(len(nodes)) + " blocks recovered")
-    return nodes
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
@@ -1806,7 +1422,7 @@ if __name__ == '__main__':
         img_gt : torch.Tensor = torch.from_numpy(np.array(f['data'])).unsqueeze(0).to(device)
         f.close()
     imageio.imwrite(os.path.join(save_folder, "GT.png"), 
-        to_img(img_gt, mode))
+        toImg(img_gt, mode))
 
     full_shape : List[int] = list(img_gt.shape)
     print(full_shape)
@@ -1884,29 +1500,17 @@ if __name__ == '__main__':
                         downscaling_technique, device, mode,
                         save_folder, save_name,
                         criterion, p)
-                elif(args['compressor'] == "zfp"):
-                    zfp_compress_nodelist(nodes, full_shape, max_LOD,
-                        downscaling_technique, device, mode,
-                        save_folder, save_name)
-                elif(args['compressor'] == "fpzip"):
-                    fpzip_compress_nodelist(nodes, full_shape, max_LOD,
-                        downscaling_technique, device, mode,
-                        save_folder, save_name)
+                elif(args['compressor'] == "tthresh"):
+                    print("Todo")
             else:
                 torch.save(nodes, os.path.join(save_folder,
                     save_name+".torch"))
             
-            
-            #nodelist_to_h5(nodes, "./Output/"+img_name+"_"+upscaling_technique+ \
-            #    "_"+downscaling_technique+"_"+criterion+str(criterion_value)+"_" +\
-            #        "maxlod"+str(max_LOD)+"_chunk"+str(min_chunk)+".h5")
         if(args['use_compressor']):
             if(args['compressor'] == "sz"):                
                 nodes = sz_decompress(os.path.join(save_folder,save_name + ".tar.gz"), device)
-            elif(args['compressor'] == "zfp"):                
-                nodes = zfp_decompress_nodelist(os.path.join(save_folder,save_name + ".tar.gz"), device)
-            elif(args['compressor'] == "fpzip"):
-                nodes = fpzip_decompress_nodelist(os.path.join(save_folder,save_name + ".tar.gz"), device)
+            elif(args['compressor'] == "tthresh"):                
+                print("Todo")
         else:
             nodes : OctreeNodeList = torch.load(os.path.join(save_folder,
                 save_name+".torch"))
@@ -1928,7 +1532,7 @@ if __name__ == '__main__':
             del data_downscaled_levels[0]
             del mask_downscaled_levels[0]
         imageio.imwrite(os.path.join(save_folder, save_name+".png"), 
-                to_img(img_upscaled, mode))
+                toImg(img_upscaled, mode))
 
         if(args['use_compressor']):
             f_size_kb = os.path.getsize(os.path.join(save_folder,
@@ -2051,7 +1655,7 @@ if __name__ == '__main__':
             upscaling, device, mode)
             print("Upscaling with seams time: %f" % (time.time() - t01))
             imageio.imwrite(os.path.join(save_folder, save_name+"_seams.png"), 
-                    to_img(img_seams, mode))
+                    toImg(img_seams, mode))
 
             img_upscaled_debug, cmap = nodes_to_full_img_debug(nodes, full_shape, 
             max_LOD, upscaling, 
@@ -2085,20 +1689,14 @@ if __name__ == '__main__':
                 del data_downscaled_levels[0]
                 del mask_downscaled_levels[0]
             imageio.imwrite(os.path.join(save_folder, save_name+"_point.png"), 
-                    to_img(img_upscaled_point, mode))
+                    toImg(img_upscaled_point, mode))
             del img_upscaled_point
         for i in range(len(nodes)):
             del nodes[i].data
         del nodes
-        #print(prof.display())
+        
         m += args['metric_skip']
 
-    '''
-    if(os.path.exists(os.path.join(save_folder, "results.pkl"))):
-        all_data = load_obj(os.path.join(save_folder, "results.pkl"))
-    else:
-        all_data = {}
-    '''
     
 
         
