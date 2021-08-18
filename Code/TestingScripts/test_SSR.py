@@ -299,16 +299,16 @@ if __name__ == '__main__':
                 }
             }
             for i in range(len(dataset)):
-                GT_data = dataset[i].clone().to(args['device'])
+                GT_data = dataset[i].clone().to(args['device']).unsqueeze(0)
                 print("Data size: " + str(GT_data.shape))
                     
                 chans = []
                 if(args['mode'] == "3D"):
-                    for j in range(args['channels']):
+                    for j in range(GT_data.shape[1]):
                         LR_data = AvgPool3D(GT_data[:,j:j+1,:,:,:], 2**(scale+1))
                         chans.append(LR_data)
                 elif(args['mode'] == "2D"):
-                    for j in range(args['channels']):
+                    for j in range(GT_data.shape[1]):
                         LR_data = AvgPool2D(GT_data[:,j:j+1,:,:], 2**(scale+1))
                         chans.append(LR_data)
                 LR_data = torch.cat(chans, dim=1)
