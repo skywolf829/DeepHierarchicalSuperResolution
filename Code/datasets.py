@@ -24,7 +24,7 @@ class TestingDataset(torch.utils.data.Dataset):
         self.items = []
 
         for filename in self.item_names:
-            to_load = os.path.join(folder_to_load, filename + self.ext)
+            to_load = os.path.join(folder_to_load, filename + "." + self.ext)
             
             print("Loading " + filename)   
             f = h5py.File(to_load, 'r')
