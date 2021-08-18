@@ -1,4 +1,8 @@
 import os
+import sys
+import os.path
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 import numpy as np
 import imageio
 import argparse
@@ -12,7 +16,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
     parser.add_argument('--file',default="4010.h5",type=str,help='File to test compression on')
-    parser.add_argument('--folder',default="octree_files",type=str,help='File to test compression on')
     parser.add_argument('--dims',default=2,type=int,help='# dimensions')    
     parser.add_argument('--channels',default=1,type=int,help='# channels')
     parser.add_argument('--nx',default=1024,type=int,help='# x dimension')
@@ -24,16 +27,15 @@ if __name__ == '__main__':
     parser.add_argument('--value_skip',default=10,type=float,help='PSNR increment by')
     parser.add_argument('--metric',default='psnr',type=str)
     parser.add_argument('--save_netcdf',default="false",type=str2bool)
-    parser.add_argument('--save_TKE',default="false",type=str2bool)
     parser.add_argument('--device',default="cpu",type=str)
     
 
     args = vars(parser.parse_args())
 
-    FlowSTSR_folder_path = os.path.dirname(os.path.abspath(__file__))
-    input_folder = os.path.join(FlowSTSR_folder_path, "TestingData", args['folder'])
-    
-    output_folder = os.path.join(FlowSTSR_folder_path, "Output")
+    project_folder_path = os.path.dirname(os.path.abspath(__file__))
+    project_folder_path = os.path.join(project_folder_path, "..", "..")
+    data_folder = os.path.join(project_folder_path, "Data", "DataReduction")
+    output_folder = os.path.join(project_folder_path, "Output")
     save_folder = os.path.join(output_folder, args['output_folder'])
 
     if(not os.path.exists(save_folder)):
@@ -50,8 +52,6 @@ if __name__ == '__main__':
     results['rec_pwmre'] = []
     results['rec_inner_mre'] = []
     results['rec_inner_pwmre'] = []
-    if(args['save_TKE']):
-        results['TKE_error'] = []
     
     if(os.path.exists(os.path.join(save_folder, "results.pkl"))):
         all_data = load_obj(os.path.join(save_folder, "results.pkl"))
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         all_data = {}
         all_data['SZ'] = results
 
-    f = h5py.File(os.path.join(input_folder, args['file']), "r")
+    f = h5py.File(os.path.join(data_folder, args['file']), "r")
     d = np.array(f['data'])
     f.close()
     for i in range(args['channels']):
@@ -129,7 +129,7 @@ if __name__ == '__main__':
             d[:,20:d.shape[1]-20,20:d.shape[2]-20,20:d.shape[3]-20])
             inner_pwmre = pw_relative_error(dc[:,20:dc.shape[1]-20,20:dc.shape[2]-20,20:dc.shape[3]-20], 
             d[:,20:d.shape[1]-20,20:d.shape[2]-20,20:d.shape[3]-20])
-        im = to_img(torch.Tensor(dc).unsqueeze(0), "2D" if args['dims'] == 2 else "3D")
+        im = toImg(torch.Tensor(dc).unsqueeze(0), "2D" if args['dims'] == 2 else "3D")
         imageio.imwrite(os.path.join(save_folder, "sz_"+args['file']+"_"+str(value)+".png"), im)
 
         print("Target: " +args['metric'] + " " + str(value))
@@ -163,12 +163,6 @@ if __name__ == '__main__':
         all_data['SZ'] = results
         save_obj(all_data, os.path.join(save_folder, "results.pkl"))
         value += args['value_skip']
-    '''
-    if(os.path.exists(os.path.join(save_folder, "results.pkl"))):
-        all_data = load_obj(os.path.join(save_folder, "results.pkl"))
-    else:
-        all_data = {}
-    '''
     
 
     os.remove(args['file']+'.dat')    
