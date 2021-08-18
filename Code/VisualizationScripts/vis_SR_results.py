@@ -1,8 +1,10 @@
+import sys
+import os.path
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
-
-from numpy.lib.npyio import save
 from utility_functions import load_obj
 import os
 
