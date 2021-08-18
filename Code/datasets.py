@@ -16,15 +16,15 @@ class TestingDataset(torch.utils.data.Dataset):
         print("Initializing dataset")
         self.item_names = []
         for filename in os.listdir(folder_to_load):
-            self.item_names.append(filename.split("/")[-1])
-            self.ext = filename.split("/").split(".")[1]
+            self.item_names.append(filename.split("/")[-1].split(".")[0])
+            self.ext = filename.split("/")[-1].split(".")[1]
         self.item_names.sort(key=int)
         print("Dataset has " + str(len(self.item_names)) + " items. Reading them now.")
 
         self.items = []
 
         for filename in self.item_names:
-            to_load = os.path.join(folder_to_load, filename)
+            to_load = os.path.join(folder_to_load, filename + self.ext)
             
             print("Loading " + filename)   
             f = h5py.File(to_load, 'r')
