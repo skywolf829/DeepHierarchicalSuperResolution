@@ -172,18 +172,15 @@ def train_single_scale(rank, generators, discriminators, opt, dataset):
                 if(volumes_seen % 50 == 0):
                     rec_numpy = fake.detach().cpu().numpy()[0]
                     rec_cm = toImg(rec_numpy)
-                    rec_cm -= rec_cm.min()
-                    rec_cm *= (1/rec_cm.max())
 
                     writer.add_image("reconstructed/%i"%len(generators), 
-                    rec_cm.clip(0,1), volumes_seen, dataformats="HWC")
+                    rec_cm, volumes_seen, dataformats="HWC")
 
                     real_numpy = real_hr.detach().cpu().numpy()[0]
                     real_cm = toImg(real_numpy)
-                    real_cm -= real_cm.min()
-                    real_cm *= (1/real_cm.max())
+                    
                     writer.add_image("real/%i"%len(generators), 
-                    real_cm.clip(0,1), volumes_seen, dataformats="HWC")
+                    real_cm, volumes_seen, dataformats="HWC")
 
                 num_total = opt['epochs']*len(dataset)
                 if(opt['train_distributed']):
