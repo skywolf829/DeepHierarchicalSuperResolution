@@ -40,6 +40,8 @@ if __name__ == '__main__':
     for scale_factor in results.keys():
         if not os.path.exists(os.path.join(save_folder, scale_factor)):
             os.makedirs(os.path.join(save_folder, scale_factor))
+    if not os.path.exists(os.path.join(save_folder, "MedianValues")):
+        os.makedirs(os.path.join(save_folder, "MedianValues"))
     
 
     
@@ -75,3 +77,48 @@ if __name__ == '__main__':
             plt.title(scale_factor + " SR - " + metric)
             plt.savefig(os.path.join(save_folder, scale_factor, metric+".png"))
             plt.clf()
+
+    # Overall graphs
+
+    averaged_results = {}
+    averaged_results['model'] = {}
+    averaged_results[interp] = {}
+
+    scale_factors = []
+
+    for scale_factor in results.keys():
+        model_results = results[scale_factor]["model"]
+        interp_results = results[scale_factor][interp]
+
+        scale_factor_int = int(scale_factor.split('x')[0])
+        scale_factors.append(scale_factor_int)
+
+        for metric in model_results.keys():
+            if(metric not in averaged_results['model'].keys()):
+                averaged_results['model'][metric] = []
+                averaged_results[interp][metric] = []
+            averaged_results['model'][metric].append(np.median(np.array(model_results[metric])))
+            averaged_results[interp][metric].append(np.median(np.array(interp_results[metric])))
+    
+    print(averaged_results)
+    for metric in model_results.keys():
+        fig = plt.figure()
+        y_label = metric
+
+        # model results plotting
+        x = scale_factors
+        y = averaged_results[metric]
+        plt.plot(x, y, label="model")
+
+        # interpolation results plotting
+        x = scale_factors
+        y = averaged_results[metric]
+        plt.plot(x, y, label=interp)
+
+        plt.legend()
+        plt.xlabel("Scale factor")
+        plt.ylabel(y_label)
+
+        plt.title("Median " + metric + " over SR factors")
+        plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"))
+        plt.clf()
