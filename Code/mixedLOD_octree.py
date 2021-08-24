@@ -1336,7 +1336,8 @@ folder : str, name : str, metric : str, value : float):
 
 def sz_decompress(folder : str, filename : str, device : str):
     print("Decompressing " + filename + " with sz method")
-    temp_folder = os.path.join(folder, "Temp")
+    cwd = os.getcwd()
+    temp_folder = os.path.join(cwd, "Temp")
     if(not os.path.exists(temp_folder)):
         os.makedirs(temp_folder)
     
@@ -1406,7 +1407,8 @@ def sz_decompress(folder : str, filename : str, device : str):
 
 def tthresh_decompress(folder : str, filename : str, device : str):
     print("Decompressing " + filename + " with tthresh method")
-    temp_folder = os.path.join(folder, "Temp")
+    cwd = os.getcwd()
+    temp_folder = os.path.join(cwd, "Temp")
     if(not os.path.exists(temp_folder)):
         os.makedirs(temp_folder)
     
