@@ -109,7 +109,10 @@ for i in range(startts, endts, ts_skip):
     "u", 3, 
     16)    
     print(f.shape)
-    f = np.linalg.norm(f, axis=3)[...,0,0]
+    f = np.linalg.norm(f, axis=3)
+    print(f.shape)
+    f = f[...,0]
+    print(f.shape)
     f = np.expand_dims(f, 0)
     f -= f.min()
     f *= 1/f.max()
