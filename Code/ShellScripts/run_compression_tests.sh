@@ -20,7 +20,7 @@ python3 -u Code/TestingScripts/sz_test.py --file Isomag2D.h5 \
 --save_netcdf false --device cpu
 
 # 3D iso1024 mag
-python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2D \
+python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool3D \
 --upscaling_technique model --model_name Isomag3D --criterion psnr --start_metric 25 \
 --end_metric 60 --metric_skip 1.0 --output_folder Isomag3D_datareduction --max_LOD 4 \
 --min_chunk 16 --mode 3D --file Isomag3D.h5 --dims 3 --nx 1024 --ny 1024 --nz 1024 \
@@ -28,7 +28,7 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avg
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
 --device cuda:0 --dynamic_downscaling true --interpolation_heuristic true 
 
-python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_technique avgpool2D \
+python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_technique avgpool3D \
 --upscaling_technique model --model_name Isomag3D --criterion psnr --start_metric 25 \
 --end_metric 60 --metric_skip 1.0 --output_folder Isomag3D_datareduction --max_LOD 4 \
 --min_chunk 16 --mode 3D --file Isomag3D.h5 --dims 3 --nx 1024 --ny 1024 --nz 1024 \
