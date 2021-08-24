@@ -1577,6 +1577,7 @@ if __name__ == '__main__':
 
     full_shape : List[int] = list(img_gt.shape)
     print(full_shape)
+    print("Img GT min/max : %0.02f, %0.02f" % (img_gt.min().item(), img_gt.max().item()))
     m = args['start_metric']
     upscaling : UpscalingMethod = UpscalingMethod(upscaling_technique, device, 
             model_name, distributed)
@@ -1680,6 +1681,7 @@ if __name__ == '__main__':
         mask_levels, data_downscaled_levels, 
         mask_downscaled_levels, mode)
         print("Recon time %f" % (time.time() - t01))
+        print("Img upscaled min/max : %0.02f, %0.02f" % (img_upscaled.min().item(), img_upscaled.max().item()))
         while(len(data_levels)>0):
             del data_levels[0]
             del mask_levels[0]
