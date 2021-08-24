@@ -1,7 +1,7 @@
 #!/bin/sh
 cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 
-python3 -u train_spatial_SR.py --save_name Isomag2D --train_distributed True --upsample_mode shuffle --beta_1 0.9 \
+python3 -u Code/train.py --save_name Isomag2D --train_distributed True --upsample_mode shuffle --beta_1 0.9 \
 --num_workers 0 --beta_2 0.999 --data_folder Isomag2D --mode 2D \
 --cropping_resolution 256 --patch_size 1024 --training_patch_size 1024 \
 --num_blocks 3 --base_num_kernels 96 --epochs 50 --random_flipping True \
