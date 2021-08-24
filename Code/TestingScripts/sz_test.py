@@ -158,8 +158,6 @@ if __name__ == '__main__':
         results['rec_pwmre'].append(final_pwmre)
         results['rec_inner_mre'].append(inner_mre)
         results['rec_inner_pwmre'].append(inner_pwmre)
-        if(args['save_TKE']):
-            results['TKE_error'].append(0.5*((d**2).mean()-(dc**2).mean()))
         all_data['SZ'] = results
         save_obj(all_data, os.path.join(save_folder, "results.pkl"))
         value += args['value_skip']
