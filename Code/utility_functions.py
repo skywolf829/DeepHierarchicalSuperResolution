@@ -153,7 +153,7 @@ def ssim3D(img1, img2, window_size = 11, size_average = True):
     return _ssim_3D(img1, img2, window, window_size, channel, size_average)
 
 def toImg(data, renorm_channels = True):
-    print("In to toImg: " + str(data.shape))
+    #print("In to toImg: " + str(data.shape))
     if(renorm_channels):
         for c in range(data.shape[0]):
             data[c] -= data[c].min()
@@ -162,8 +162,9 @@ def toImg(data, renorm_channels = True):
         im =  cm.coolwarm(data[0])
     elif(len(data.shape) == 4):
         im = toImg(data[:,:,:,int(data.shape[3]/2)], renorm_channels)
-    print("Out of toImg: " + str(im.shape))
-    
+    #print("Out of toImg: " + str(im.shape))
+    im *= 255
+    im = im.astype(np.uint8)
     return im
 
 def bilinear_interpolate(im, x, y):

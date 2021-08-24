@@ -14,14 +14,6 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avg
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
 --device cuda:0 --dynamic_downscaling true --interpolation_heuristic true 
 
-python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_technique avgpool2D \
---upscaling_technique model --model_name Isomag2D --criterion psnr --start_metric 25 \
---end_metric 60 --metric_skip 0.5 --output_folder Isomag2D_datareduction --max_LOD 6 \
---min_chunk 16 --mode 2D --file Isomag2D.h5 --dims 2 --nx 1024 --ny 1024 \
---use_compressor true --distributed false --compressor tthresh --load_existing false \
---save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
---device cuda:0 --dynamic_downscaling true --interpolation_heuristic true 
-
 python3 -u Code/TestingScripts/sz_test.py --file Isomag2D.h5 \
 --dims 2 --nx 1024 --ny 1024 --output_folder Isomag2D_datareduction \
 --start_value 10 --end_value 100 --value_skip 1 --metric psnr \
