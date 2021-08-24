@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     font = {#'font.family' : 'normal',
         #'font.weight' : 'bold',
-        'font.size'   : 15}
+        'font.size'   : 13}
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
@@ -100,25 +100,26 @@ if __name__ == '__main__':
             averaged_results['model'][metric].append(np.median(np.array(model_results[metric])))
             averaged_results[interp][metric].append(np.median(np.array(interp_results[metric])))
     
-    print(averaged_results)
     for metric in model_results.keys():
         fig = plt.figure()
         y_label = metric
 
         # model results plotting
         x = scale_factors
-        y = averaged_results[metric]
+        y = averaged_results['model'][metric]
         plt.plot(x, y, label="model")
 
         # interpolation results plotting
         x = scale_factors
-        y = averaged_results[metric]
+        y = averaged_results[interp][metric]
         plt.plot(x, y, label=interp)
 
         plt.legend()
         plt.xlabel("Scale factor")
         plt.ylabel(y_label)
-
+        plt.xscale('log')
+        plt.minorticks_off()
+        plt.xticks(scale_factors, labels=scale_factors)
         plt.title("Median " + metric + " over SR factors")
         plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"))
         plt.clf()
