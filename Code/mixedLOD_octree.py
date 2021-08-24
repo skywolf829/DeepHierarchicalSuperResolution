@@ -1574,7 +1574,7 @@ if __name__ == '__main__':
         img_gt : torch.Tensor = torch.from_numpy(np.array(f['data'])).unsqueeze(0).to(device)
         f.close()
     imageio.imwrite(os.path.join(save_folder, "GT.png"), 
-        toImg(img_gt, mode))
+        toImg(img_gt.cpu().numpy(), mode))
 
     full_shape : List[int] = list(img_gt.shape)
     print(full_shape)
@@ -1687,7 +1687,7 @@ if __name__ == '__main__':
             del data_downscaled_levels[0]
             del mask_downscaled_levels[0]
         imageio.imwrite(os.path.join(save_folder, save_name+".png"), 
-                toImg(img_upscaled, mode))
+                toImg(img_upscaled.cpu().numpy(), mode))
 
         if(args['use_compressor']):
             f_size_kb = os.path.getsize(os.path.join(save_folder,
@@ -1808,7 +1808,7 @@ if __name__ == '__main__':
             upscaling, device, mode)
             print("Upscaling with seams time: %f" % (time.time() - t01))
             imageio.imwrite(os.path.join(save_folder, save_name+"_seams.png"), 
-                    toImg(img_seams, mode))
+                    toImg(img_seams.cpu().numpy(), mode))
 
             img_upscaled_debug, cmap = nodes_to_full_img_debug(nodes, full_shape, 
             max_LOD, upscaling, 
@@ -1842,7 +1842,7 @@ if __name__ == '__main__':
                 del data_downscaled_levels[0]
                 del mask_downscaled_levels[0]
             imageio.imwrite(os.path.join(save_folder, save_name+"_point.png"), 
-                    toImg(img_upscaled_point, mode))
+                    toImg(img_upscaled_point.cpu().numpy(), mode))
             del img_upscaled_point
         for i in range(len(nodes)):
             del nodes[i].data
