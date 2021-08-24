@@ -438,9 +438,9 @@ class UpscalingMethod(nn.Module):
                 del(discs[0])
                 #self.models.append(torch_models[i])
                 
-                print("Tracing model " + str(i) + " with input size " + str(torch_models[i].get_input_shape()))
+                print("Tracing model " + str(i) + " with input size " + str(torch_models[i].resolution))
                 self.models.append(torch.jit.trace(torch_models[i], 
-                torch.zeros(torch_models[0].resolution).to(device)))
+                    torch.zeros(torch_models[0].resolution).to(device)))
                 
         torch.cuda.empty_cache()
         if(distributed and torch.cuda.device_count() > 1):
