@@ -1334,15 +1334,14 @@ folder : str, name : str, metric : str, value : float):
     os.system("tar -cjvf " + save_location + " -C " + folder + " Temp")
     os.system("rm -r " + temp_folder_path)
 
-def sz_decompress(filename : str, device : str):
+def sz_decompress(folder : str, filename : str, device : str):
     print("Decompressing " + filename + " with sz method")
-    folder_path = os.path.dirname(os.path.abspath(__file__))
-    temp_folder = os.path.join(folder_path, "Temp")
+    temp_folder = os.path.join(folder, "Temp")
     if(not os.path.exists(temp_folder)):
         os.makedirs(temp_folder)
     
     nodes = OctreeNodeList()
-
+    filename = os.path.join(folder, filename)
     os.system("tar -xvf " + filename)
     metadata = np.fromfile(os.path.join(temp_folder, "metadata"), dtype=int)
     min_LOD = metadata[0]
@@ -1405,15 +1404,14 @@ def sz_decompress(filename : str, device : str):
     print("Finished decompressing, " + str(len(nodes)) + " blocks recovered")
     return nodes
 
-def tthresh_decompress(filename : str, device : str):
+def tthresh_decompress(folder : str, filename : str, device : str):
     print("Decompressing " + filename + " with tthresh method")
-    folder_path = os.path.dirname(os.path.abspath(__file__))
-    temp_folder = os.path.join(folder_path, "Temp")
+    temp_folder = os.path.join(folder, "Temp")
     if(not os.path.exists(temp_folder)):
         os.makedirs(temp_folder)
     
     nodes = OctreeNodeList()
-
+    filename = os.path.join(folder, filename)
     os.system("tar -xvf " + filename)
     metadata = np.fromfile(os.path.join(temp_folder, "metadata"), dtype=int)
     min_LOD = metadata[0]
@@ -1663,9 +1661,9 @@ if __name__ == '__main__':
             
         if(args['use_compressor']):
             if(args['compressor'] == "sz"):                
-                nodes = sz_decompress(os.path.join(save_folder,save_name + ".tar.gz"), device)
+                nodes = sz_decompress(save_folder, save_name + ".tar.gz", device)
             elif(args['compressor'] == "tthresh"):                
-                nodes = tthresh_decompress(os.path.join(save_folder,save_name + ".tar.gz"), device)
+                nodes = tthresh_decompress(save_folder, save_name + ".tar.gz", device)
         else:
             nodes : OctreeNodeList = torch.load(os.path.join(save_folder,
                 save_name+".torch"))
