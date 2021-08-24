@@ -125,7 +125,7 @@ if __name__ == '__main__':
             d[:,20:d.shape[1]-20,20:d.shape[2]-20,20:d.shape[3]-20])
             inner_pwmre = pw_relative_error(dc[:,20:dc.shape[1]-20,20:dc.shape[2]-20,20:dc.shape[3]-20], 
             d[:,20:d.shape[1]-20,20:d.shape[2]-20,20:d.shape[3]-20])
-        im = toImg(torch.Tensor(dc).unsqueeze(0).cpu().numpy(), "2D" if args['dims'] == 2 else "3D")
+        im = toImg(dc, "2D" if args['dims'] == 2 else "3D")
         imageio.imwrite(os.path.join(save_folder, "tthresh_"+args['file']+"_"+str(value)+".png"), im)
 
         print("Target: " +args['metric'] + " " + str(value))
