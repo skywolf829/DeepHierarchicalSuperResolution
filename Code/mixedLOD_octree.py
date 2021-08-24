@@ -1505,7 +1505,6 @@ if __name__ == '__main__':
     parser.add_argument('--use_compressor',default="true",type=str2bool)
     parser.add_argument('--save_netcdf',default="false",type=str2bool)
     parser.add_argument('--save_netcdf_octree',default="false",type=str2bool)
-    parser.add_argument('--save_TKE',default="false",type=str2bool)
 
     parser.add_argument('--compressor',default="zfp",type=str)
     parser.add_argument('--data_type',default="h5",type=str)
@@ -1534,10 +1533,10 @@ if __name__ == '__main__':
     img_ext : str = args['file'].split(".")[1]
     img_type : str = args['file'].split(".")[1]
 
-    FlowSTSR_folder_path = os.path.dirname(os.path.abspath(__file__))
-    input_folder = os.path.join(FlowSTSR_folder_path, "TestingData", args['folder'])
-    
-    output_folder = os.path.join(FlowSTSR_folder_path, "Output")
+    project_folder_path = os.path.dirname(os.path.abspath(__file__))
+    project_folder_path = os.path.join(project_folder_path, "..")
+    data_folder = os.path.join(project_folder_path, "Data", "DataReduction")
+    output_folder = os.path.join(project_folder_path, "Output")
     save_folder = os.path.join(output_folder, args['output_folder'])
 
     if(not os.path.exists(save_folder)):
@@ -1555,8 +1554,6 @@ if __name__ == '__main__':
     results['rec_pwmre'] = []
     results['rec_inner_mre'] = []
     results['rec_inner_pwmre'] = []
-    if(args['save_TKE']):
-        results['TKE_error'] = []
 
     if(os.path.exists(os.path.join(save_folder, "results.pkl"))):
         all_data = load_obj(os.path.join(save_folder, "results.pkl"))
@@ -1754,8 +1751,6 @@ if __name__ == '__main__':
         results['rec_pwmre'].append(final_pwmre)
         results['rec_inner_mre'].append(final_inner_mre)
         results['rec_inner_pwmre'].append(final_inner_pwmre)
-        if(args['save_TKE']):
-            results['TKE_error'].append(0.5*((img_gt**2).mean().item()-(img_upscaled**2).mean().item()))
         all_data[args['save_name']] = results
         save_obj(all_data, os.path.join(save_folder, "results.pkl"))
 

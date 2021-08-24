@@ -53,8 +53,6 @@ if __name__ == '__main__':
     results['rec_pwmre'] = []
     results['rec_inner_mre'] = []
     results['rec_inner_pwmre'] = []
-    if(args['save_TKE']):
-        results['TKE_error'] = []
     
     if(os.path.exists(os.path.join(save_folder, "results.pkl"))):
         all_data = load_obj(os.path.join(save_folder, "results.pkl"))
@@ -127,7 +125,7 @@ if __name__ == '__main__':
             d[:,20:d.shape[1]-20,20:d.shape[2]-20,20:d.shape[3]-20])
             inner_pwmre = pw_relative_error(dc[:,20:dc.shape[1]-20,20:dc.shape[2]-20,20:dc.shape[3]-20], 
             d[:,20:d.shape[1]-20,20:d.shape[2]-20,20:d.shape[3]-20])
-        im = to_img(torch.Tensor(dc).unsqueeze(0), "2D" if args['dims'] == 2 else "3D")
+        im = toImg(torch.Tensor(dc).unsqueeze(0).cpu().numpy(), "2D" if args['dims'] == 2 else "3D")
         imageio.imwrite(os.path.join(save_folder, "tthresh_"+args['file']+"_"+str(value)+".png"), im)
 
         print("Target: " +args['metric'] + " " + str(value))
@@ -156,8 +154,6 @@ if __name__ == '__main__':
         results['rec_pwmre'].append(final_pwmre)
         results['rec_inner_mre'].append(inner_mre)
         results['rec_inner_pwmre'].append(inner_pwmre)
-        if(args['save_TKE']):
-            results['TKE_error'].append(0.5*((d**2).mean()-(dc**2).mean()))
         all_data['TTHRESH'] = results
         save_obj(all_data, os.path.join(save_folder, "results.pkl"))
         value += args['value_skip']
