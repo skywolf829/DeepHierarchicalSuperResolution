@@ -88,14 +88,17 @@ sim_name, timestep, field, num_components, num_workers):
            print("Done: %i/%i" % (done, len(threads)))
     return full
 
+project_folder_path = os.path.dirname(os.path.abspath(__file__))
+project_folder_path = os.path.join(project_folder_path, "..")
+data_folder = os.path.join(project_folder_path, "Data", "SuperResolutionData")
+save_folder = os.path.join(data_folder, "Isomag2D", "TrainingData")
 
-save_dir = "./TrainingData/Isomag2D"
 name = "isotropic1024coarse"
 t0 = time.time()
 count = 0
 startts = 1
 endts = 5028
-ts_skip = 100
+ts_skip = 10
 frames = []
 for i in range(startts, endts, ts_skip):
     print("TS %i/%i" % (i, endts))
@@ -108,9 +111,11 @@ for i in range(startts, endts, ts_skip):
     print(f.shape)
     f = np.linalg.norm(f, axis=3)[...,0,0]
     f = np.expand_dims(f, 0)
+    f -= f.min()
+    f *= 1/f.max()
     print(f.shape)
     #frames.append(f)
-    f_h5 = h5py.File(os.path.join(save_dir, str(i-1)+ '.h5'), 'w')
+    f_h5 = h5py.File(os.path.join(save_folder, str(i-1)+ '.h5'), 'w')
     f_h5.create_dataset("data", data=f)
     f_h5.close()
     print("Finished " + str(i))
