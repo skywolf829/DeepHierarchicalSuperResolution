@@ -163,7 +163,7 @@ def toImg(data, renorm_channels = True):
     elif(len(data.shape) == 4):
         im = toImg(data[:,:,:,int(data.shape[3]/2)], renorm_channels)
     print("Out of toImg: " + str(im.shape))
-
+    
     return im
 
 def bilinear_interpolate(im, x, y):
