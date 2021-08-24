@@ -1573,8 +1573,7 @@ if __name__ == '__main__':
         f = h5py.File(os.path.join(data_folder, args['file']), "r")
         img_gt : torch.Tensor = torch.from_numpy(np.array(f['data'])).unsqueeze(0).to(device)
         f.close()
-    imageio.imwrite(os.path.join(save_folder, "GT.png"), 
-        toImg(img_gt[0].cpu().numpy(), mode))
+    
 
     full_shape : List[int] = list(img_gt.shape)
     print(full_shape)
@@ -1686,8 +1685,6 @@ if __name__ == '__main__':
             del mask_levels[0]
             del data_downscaled_levels[0]
             del mask_downscaled_levels[0]
-        imageio.imwrite(os.path.join(save_folder, save_name+".png"), 
-                toImg(img_upscaled[0].cpu().numpy(), mode))
 
         if(args['use_compressor']):
             f_size_kb = os.path.getsize(os.path.join(save_folder,
@@ -1767,6 +1764,11 @@ if __name__ == '__main__':
             elif(mode == "2D"):
                 dim_0 = rootgrp.createVariable("velocity magnitude", np.float32, ("u","v"))
             dim_0[:] = img_upscaled[0,0].cpu().numpy()
+
+            
+        imageio.imwrite(os.path.join(save_folder, save_name+".png"), 
+            toImg(img_upscaled[0].cpu().numpy(), mode))
+
         del img_upscaled
 
         if(args['save_netcdf_octree']):
@@ -1809,7 +1811,7 @@ if __name__ == '__main__':
             print("Upscaling with seams time: %f" % (time.time() - t01))
             imageio.imwrite(os.path.join(save_folder, save_name+"_seams.png"), 
                     toImg(img_seams[0].cpu().numpy(), mode))
-
+            del img_seams
             img_upscaled_debug, cmap = nodes_to_full_img_debug(nodes, full_shape, 
             max_LOD, upscaling, 
             downscaling_technique, device, mode)
@@ -1851,5 +1853,6 @@ if __name__ == '__main__':
         m += args['metric_skip']
 
     
-
+    imageio.imwrite(os.path.join(save_folder, "GT.png"), 
+        toImg(img_gt[0].cpu().numpy(), mode))
         
