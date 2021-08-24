@@ -1697,6 +1697,8 @@ if __name__ == '__main__':
         
         torch.cuda.empty_cache()
         with torch.no_grad():
+            print("Img upscaled min/max : %0.02f, %0.02f" % (img_upscaled.min().item(), img_upscaled.max().item()))
+            print("Img GT min/max : %0.02f, %0.02f" % (img_gt.min().item(), img_gt.max().item()))
             final_psnr : float = PSNR(img_upscaled, img_gt).cpu().item()
             final_mse : float = MSE(img_upscaled, img_gt).cpu().item()
             final_mre : float = relative_error(img_upscaled, img_gt).cpu().item()
