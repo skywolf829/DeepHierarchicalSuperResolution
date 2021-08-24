@@ -153,23 +153,8 @@ def ssim3D(img1, img2, window_size = 11, size_average = True):
     return _ssim_3D(img1, img2, window, window_size, channel, size_average)
 
 def toImg(data, renorm_channels = False):
-    data = data.copy()
     if(len(data.shape) == 3):
-        if(data.shape[0] == 1):
-            return cm.coolwarm(data[0]).swapaxes(0,2).swapaxes(1,2)
-        elif(data.shape[0] == 2):
-            data += 1
-            data *= 0.5
-            data = data.clip(0, 1)
-            z = np.zeros([1, data.shape[1], data.shape[2]])
-            vf = np.concatenate([data, z])
-            return vf
-        elif(data.shape[0] == 3):
-            if(renorm_channels):
-                for j in range(data.shape[0]):
-                    data[j] -= data[j].min()
-                    data[j] *= (1 / data[j].max())
-            return data
+        return cm.coolwarm(data[0]).swapaxes(0,2).swapaxes(1,2)
     elif(len(data.shape) == 4):
         return toImg(data[:,:,:,int(data.shape[3]/2)], renorm_channels)
 
