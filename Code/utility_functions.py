@@ -152,8 +152,12 @@ def ssim3D(img1, img2, window_size = 11, size_average = True):
     
     return _ssim_3D(img1, img2, window, window_size, channel, size_average)
 
-def toImg(data, renorm_channels = False):
+def toImg(data, renorm_channels = True):
     print("In to toImg: " + str(data.shape))
+    if(renorm_channels):
+        for c in range(data.shape[0]):
+            data[c] -= data[c].min()
+            data[c] *= 1 / data[c].max()
     if(len(data.shape) == 3):
         im =  cm.coolwarm(data[0])
     elif(len(data.shape) == 4):
