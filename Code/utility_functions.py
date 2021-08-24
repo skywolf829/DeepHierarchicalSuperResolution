@@ -153,10 +153,14 @@ def ssim3D(img1, img2, window_size = 11, size_average = True):
     return _ssim_3D(img1, img2, window, window_size, channel, size_average)
 
 def toImg(data, renorm_channels = False):
+    print("In to toImg: " + str(data.shape))
     if(len(data.shape) == 3):
-        return cm.coolwarm(data[0]).swapaxes(0,2).swapaxes(1,2)
+        im =  cm.coolwarm(data[0]).swapaxes(0,2).swapaxes(1,2)
     elif(len(data.shape) == 4):
-        return toImg(data[:,:,:,int(data.shape[3]/2)], renorm_channels)
+        im = toImg(data[:,:,:,int(data.shape[3]/2)], renorm_channels)
+    print("Out of toImg: " + str(im.shape))
+
+    return im
 
 def bilinear_interpolate(im, x, y):
     dtype = torch.cuda.FloatTensor
