@@ -7,7 +7,7 @@ export PATH="$HOME/tthresh/build:$PATH"
 
 # Isomag2D
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2D \
---upscaling_technique model --model_name Isomag2D --criterion psnr --start_metric 25 \
+--upscaling_technique model --model_name Isomag2D --criterion psnr --start_metric 27 \
 --end_metric 60 --metric_skip 0.5 --output_folder Isomag2D_datareduction --max_LOD 6 \
 --min_chunk 16 --mode 2D --file Isomag2D.h5 --dims 2 --nx 1024 --ny 1024 \
 --use_compressor true --distributed false --compressor sz --load_existing false \
@@ -16,8 +16,8 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avg
 
 python3 -u Code/TestingScripts/sz_test.py --file Isomag2D.h5 \
 --dims 2 --nx 1024 --ny 1024 --output_folder Isomag2D_datareduction \
---start_value 10 --end_value 100 --value_skip 1 --metric psnr \
---save_netcdf false --device cpu
+--start_value 10 --end_value 60 --value_skip 1 --metric psnr \
+--save_netcdf false --device cuda:0
 
 # 3D iso1024 mag
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool3D \
@@ -38,12 +38,12 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_techniqu
 
 python3 -u Code/TestingScripts/sz_test.py --file Isomag3D.h5 \
 --dims 3 --nx 1024 --ny 1024 --nz 1024 --output_folder Isomag3D_datareduction \
---start_value 10 --end_value 100 --value_skip 1 --metric psnr \
+--start_value 10 --end_value 60 --value_skip 1 --metric psnr \
 --save_netcdf false --device cpu
 
 python3 -u Code/TestingScripts/tthresh_test.py --file Isomag3D.h5 \
 --dims 3 --nx 1024 --ny 1024 --nz 1024 --output_folder Isomag3D_datareduction \
---start_value 10 --end_value 100 --value_skip 1 --metric psnr \
+--start_value 10 --end_value 60 --value_skip 1 --metric psnr \
 --save_netcdf false --device cpu
 
 # 3D mixing dataset
