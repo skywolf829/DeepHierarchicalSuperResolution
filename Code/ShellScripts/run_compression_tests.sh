@@ -7,7 +7,7 @@ export PATH="$HOME/tthresh/build:$PATH"
 
 # Isomag2D
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool2D \
---upscaling_technique model --model_name Isomag2D --criterion psnr --start_metric 25 \
+--upscaling_technique model --model_name Isomag2D --criterion psnr --start_metric 27 \
 --end_metric 60 --metric_skip 0.5 --output_folder Isomag2D_datareduction --max_LOD 6 \
 --min_chunk 16 --mode 2D --file Isomag2D.h5 --dims 2 --nx 1024 --ny 1024 \
 --use_compressor true --distributed false --compressor sz --load_existing false \
