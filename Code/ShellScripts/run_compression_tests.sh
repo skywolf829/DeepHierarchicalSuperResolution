@@ -16,8 +16,8 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avg
 
 python3 -u Code/TestingScripts/sz_test.py --file Isomag2D.h5 \
 --dims 2 --nx 1024 --ny 1024 --output_folder Isomag2D_datareduction \
---start_value 10 --end_value 100 --value_skip 1 --metric psnr \
---save_netcdf false --device cpu
+--start_value 10 --end_value 60 --value_skip 1 --metric psnr \
+--save_netcdf false --device cuda:0
 
 # 3D iso1024 mag
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool3D \
@@ -38,12 +38,12 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_techniqu
 
 python3 -u Code/TestingScripts/sz_test.py --file Isomag3D.h5 \
 --dims 3 --nx 1024 --ny 1024 --nz 1024 --output_folder Isomag3D_datareduction \
---start_value 10 --end_value 100 --value_skip 1 --metric psnr \
+--start_value 10 --end_value 60 --value_skip 1 --metric psnr \
 --save_netcdf false --device cpu
 
 python3 -u Code/TestingScripts/tthresh_test.py --file Isomag3D.h5 \
 --dims 3 --nx 1024 --ny 1024 --nz 1024 --output_folder Isomag3D_datareduction \
---start_value 10 --end_value 100 --value_skip 1 --metric psnr \
+--start_value 10 --end_value 60 --value_skip 1 --metric psnr \
 --save_netcdf false --device cpu
 
 # 3D mixing dataset
