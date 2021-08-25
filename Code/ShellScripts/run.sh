@@ -18,4 +18,4 @@ cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 python3 -u Code/train.py --save_name Mixing3D --train_distributed True --gpus_per_node 8 \
 --num_workers 0 --data_folder Mixing3D --mode 3D --patch_size 96 --training_patch_size 96 \
 --epochs 100 --min_dimension_size 16 \
---cropping_resolution 96
+--cropping_resolution 96 --alpha_2 0
