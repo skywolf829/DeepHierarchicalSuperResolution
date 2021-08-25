@@ -123,3 +123,38 @@ if __name__ == '__main__':
         plt.title("Median " + metric + " over SR factors")
         plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"))
         plt.clf()
+
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+
+    left_y_label = "PSNR (dB)"
+    right_y_label = "SSIM"
+
+    # model results plotting
+    x = scale_factors
+    left_y = averaged_results['model'][left_y_label]
+    right_y = averaged_results['model'][right_y_label]
+    ax1.plot(x, left_y, label='model', marker='s')
+    ax2.plot(x, right_y, label='model', linestyle='dashed', marker='^')
+
+    # interpolation results plotting
+    x = scale_factors
+    left_y = averaged_results[interp][left_y_label]
+    right_y = averaged_results[interp][right_y_label]
+    ax1.plot(x, left_y, label=interp, marker='s')
+    ax2.plot(x, right_y, label=interp, linestyle='dashed', marker='^')
+
+    ax1.legend()
+    #ax2.legend()
+    ax1.set_xlabel("Scale factor")
+    ax1.set_ylabel(left_y_label)
+    ax2.set_ylabel(right_y_label)
+
+    ax1.set_xscale('log')
+    ax1.minorticks_off()
+
+    ax1.set_xticks(scale_factors)
+    ax1.set_xticklabels(scale_factors)
+    ax1.set_title("Median PSNR/SSIM over SR factors")
+    plt.savefig(os.path.join(save_folder, "MedianValues", "Combined.png"))
+    plt.clf()
