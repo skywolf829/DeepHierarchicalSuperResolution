@@ -49,6 +49,7 @@ if __name__ == '__main__':
 
 
     for method in results.keys():
+        print(results[method].keys())
         plt.figure(1)
         y_psnr = np.array(results[method]['rec_psnr'])
         y_ssim = np.array(results[method]['rec_ssim'])
@@ -56,7 +57,7 @@ if __name__ == '__main__':
         low = np.where(y_psnr > args['min_PSNR'], y_psnr, 0)
         high = np.where(y_psnr < args['max_PSNR'], y_psnr, 0)
         in_range = np.argwhere(low*high).flatten()
-        
+        print(in_range)
         y_psnr = y_psnr[in_range]
         y_ssim = y_ssim[in_range]
         x = x_cr[in_range]
@@ -66,6 +67,8 @@ if __name__ == '__main__':
         plt.plot(x[psnr_ordering], y_psnr[psnr_ordering], label=method)
         plt.figure(2)
         plt.plot(x[ssim_ordering], y_ssim[ssim_ordering], label=method)
+        plt.figure(3)
+        plt.plot(np.array(results[method]['psnrs']), np.array(results[method]['rec_psnr']), label=method)
         
     plt.figure(1)
     plt.ylabel("Reconstructed data PSNR (dB)")
@@ -82,5 +85,14 @@ if __name__ == '__main__':
     plt.title("Reconstructed data SSIM over compression ratios")
     plt.tight_layout()
     plt.savefig(os.path.join(save_folder, "ssim.png"))
+    #plt.show()
+    plt.clf()
+
+    plt.figure(3)
+    plt.ylabel("Reconstructed PSNR (dB)")
+    plt.xlabel("Target PSNR")
+    plt.title("Reconstructed PSNR over target PSNR")
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_folder, "psnr_vs_recpsnr.png"))
     #plt.show()
     plt.clf()
