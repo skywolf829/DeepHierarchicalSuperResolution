@@ -73,6 +73,7 @@ if __name__ == '__main__':
     plt.figure(1)
     plt.ylabel("Reconstructed data PSNR (dB)")
     plt.xlabel("Compression ratio")
+    plt.legend()
     plt.title("Reconstructed data PSNR over compression ratios")
     plt.tight_layout()
     plt.savefig(os.path.join(save_folder, "psnr.png"))
@@ -81,6 +82,7 @@ if __name__ == '__main__':
 
     plt.figure(2)
     plt.ylabel("Reconstructed data SSIM")
+    plt.legend()
     plt.xlabel("Compression ratio")
     plt.title("Reconstructed data SSIM over compression ratios")
     plt.tight_layout()
@@ -90,6 +92,7 @@ if __name__ == '__main__':
 
     plt.figure(3)
     plt.ylabel("Reconstructed PSNR (dB)")
+    plt.legend()
     plt.xlabel("Target PSNR")
     plt.title("Reconstructed PSNR over target PSNR")
     plt.tight_layout()
