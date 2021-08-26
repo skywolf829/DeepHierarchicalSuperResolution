@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
             f_size_kb += os.path.getsize(args['file'] + ".dat.tthresh") / 1024
 
-            command = "tthresh -t float -c " + args['file'] + ".dat.tthresh -o " + args['file'] + ".dat.tthresh.out"  
+            command = "tthresh -c " + args['file'] + ".dat.tthresh -o " + args['file'] + ".dat.tthresh.out"  
 
             os.system(command)
 
