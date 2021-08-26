@@ -67,7 +67,7 @@ export PATH="$HOME/tthresh/build:$PATH"
 # Plume dataset
 python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_technique avgpool3D \
 --upscaling_technique model --model_name Plume --criterion psnr --start_metric 25 \
---end_metric 60 --metric_skip 1.0 --output_folder Plume_datareduction --max_LOD 4 \
+--end_metric 60 --metric_skip 1.0 --output_folder Plume_datareduction --max_LOD 3 \
 --min_chunk 16 --mode 3D --file Plume.h5 --dims 3 --nx 512 --ny 512 --nz 128 \
 --use_compressor true --distributed false --compressor tthresh --load_existing false \
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
@@ -75,7 +75,7 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_techniqu
 
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool3D \
 --upscaling_technique model --model_name Plume --criterion psnr --start_metric 25 \
---end_metric 60 --metric_skip 1.0 --output_folder Plume_datareduction --max_LOD 4 \
+--end_metric 60 --metric_skip 1.0 --output_folder Plume_datareduction --max_LOD 3 \
 --min_chunk 16 --mode 3D --file Plume.h5 --dims 3 --nx 512 --ny 512 --nz 128 \
 --use_compressor true --distributed false --compressor sz --load_existing false \
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
@@ -94,7 +94,7 @@ python3 -u Code/TestingScripts/tthresh_test.py --file Plume.h5 \
 # Vorts dataset
 python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_technique avgpool3D \
 --upscaling_technique model --model_name Vorts --criterion psnr --start_metric 25 \
---end_metric 60 --metric_skip 1.0 --output_folder Vorts_datareduction --max_LOD 4 \
+--end_metric 60 --metric_skip 1.0 --output_folder Vorts_datareduction --max_LOD 3 \
 --min_chunk 16 --mode 3D --file Vorts.h5 --dims 3 --nx 128 --ny 128 --nz 128 \
 --use_compressor true --distributed false --compressor tthresh --load_existing false \
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \
@@ -102,7 +102,7 @@ python3 -u Code/mixedLOD_octree.py --save_name NN_TTHRESH --downscaling_techniqu
 
 python3 -u Code/mixedLOD_octree.py --save_name NN_SZ --downscaling_technique avgpool3D \
 --upscaling_technique model --model_name Vorts --criterion psnr --start_metric 25 \
---end_metric 60 --metric_skip 1.0 --output_folder Vorts_datareduction --max_LOD 4 \
+--end_metric 60 --metric_skip 1.0 --output_folder Vorts_datareduction --max_LOD 3 \
 --min_chunk 16 --mode 3D --file Vorts.h5 --dims 3 --nx 128 --ny 128 --nz 128 \
 --use_compressor true --distributed false --compressor sz --load_existing false \
 --save_netcdf false --save_netcdf_octree false --debug true --preupscaling_PSNR true \

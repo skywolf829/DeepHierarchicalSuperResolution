@@ -83,7 +83,7 @@ if __name__ == '__main__':
                 command = command + " -p " + str(value)
             elif(args['metric'] == "mre"):
                 command = command + " -e " + str(value)
-            command = command + " -c " + args['file'] + ".dat.tthresh"
+            command = command + " -t float -c " + args['file'] + ".dat.tthresh"
             start_t = time.time()
             print("Running: " + command)
             os.system(command)
@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
             f_size_kb += os.path.getsize(args['file'] + ".dat.tthresh") / 1024
 
-            command = "tthresh -c " + args['file'] + ".dat.tthresh -o " + args['file'] + ".dat.tthresh.out"  
+            command = "tthresh -t float -c " + args['file'] + ".dat.tthresh -o " + args['file'] + ".dat.tthresh.out"  
 
             os.system(command)
 
