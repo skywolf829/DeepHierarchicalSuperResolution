@@ -82,12 +82,12 @@ export PATH="$HOME/tthresh/build:$PATH"
 #--device cuda:0 --dynamic_downscaling true --interpolation_heuristic true 
 
 python3 -u Code/TestingScripts/sz_test.py --file Plume.h5 \
---dims 3 --nx 512 --ny 512 --nz 128 --output_folder Plume_datareduction \
+--dims 3 --nx 512 --ny 128 --nz 128 --output_folder Plume_datareduction \
 --start_value 10 --end_value 60 --value_skip 1 --metric psnr \
 --save_netcdf false --device cuda:0
 
 python3 -u Code/TestingScripts/tthresh_test.py --file Plume.h5 \
---dims 3 --nx 512 --ny 512 --nz 128 --output_folder Plume_datareduction \
+--dims 3 --nx 512 --ny 128 --nz 128 --output_folder Plume_datareduction \
 --start_value 10 --end_value 60 --value_skip 1 --metric psnr \
 --save_netcdf false --device cuda:0
 
