@@ -26,11 +26,11 @@ if __name__ == '__main__':
     results_file = os.path.join(save_folder, "results.pkl")
     
     make_all = False
-    full_file_size = 4096
-    #full_file_size = 4194306
-    #full_file_size = 524209
-    #full_file_size = 8192
-    #full_file_size = 32770    
+    #full_file_size = 4096       # Isomag2D
+    #full_file_size = 4194306   # Isomag3D
+    #full_file_size = 524209    # Mixing3D
+    #full_file_size = 8192      # Vorts
+    full_file_size = 32770     # Plume
 
     results = load_obj(results_file)
     #save_obj(results, results_file)
@@ -69,6 +69,11 @@ if __name__ == '__main__':
         plt.figure(2)
         plt.plot(x[ssim_ordering], y_ssim[ssim_ordering], label=method)
         plt.figure(3)
+        print(method)
+        for i in range(np.array(results[method]['psnrs']).shape[0]):
+            print("Target %0.02f, result %0.02f, CR %0.02f" % (np.array(results[method]['psnrs'])[i], 
+                np.array(results[method]['rec_psnr'])[i],
+                np.array(results[method]['compression_ratio'])[i]))
         plt.plot(np.array(results[method]['psnrs']), np.array(results[method]['rec_psnr']), label=method)
         
     plt.figure(1)
