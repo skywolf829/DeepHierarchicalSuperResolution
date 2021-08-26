@@ -1428,8 +1428,6 @@ def tthresh_decompress(folder : str, filename : str, device : str):
         command = "tthresh -c " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh") + \
             " -o " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh.out")
 
-        if(len(full_shape) == 5):
-            command = command + " " + str(full_shape[4])
         print(command)
         os.system(command)
 
