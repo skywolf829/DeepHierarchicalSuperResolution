@@ -1209,7 +1209,7 @@ folder : str, name : str, metric : str, value: float):
         if(ndims == 3):
             command = command + " " + str(d.shape[2])
 
-        command = command + " -p " + str(value)
+        command = command + " -t float -p " + str(value)
         command = command + " -c " + d_loc + ".tthresh"
         print(command)
         os.system(command)
@@ -1425,8 +1425,8 @@ def tthresh_decompress(folder : str, filename : str, device : str):
     
     data_channels = []
     for i in range(full_shape[1]):
-        command = "sz -c " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh") + \
-            + " -o " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh.out")
+        command = "tthresh -c " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh") + \
+            + " -t float -o " + os.path.join(temp_folder, "nn_data_"+str(i)+".dat.tthresh.out")
 
         if(len(full_shape) == 5):
             command = command + " " + str(full_shape[4])
