@@ -1196,7 +1196,6 @@ folder : str, name : str, metric : str, value: float):
     save_location = os.path.join(folder, name +".tar.gz")
     if(not os.path.exists(temp_folder_path)):
         os.makedirs(temp_folder_path)
-    imageio.imwrite(os.path.join(folder,name+"compressed.png"), toImg(full_im[0].cpu().numpy()))
 
     for i in range(full_im.shape[1]):
         d = full_im.cpu().numpy()[0,i]
@@ -1215,6 +1214,7 @@ folder : str, name : str, metric : str, value: float):
         os.system(command)
         os.system("rm " + d_loc)
     
+    imageio.imwrite(os.path.join(folder,name+"compressed.png"), toImg(full_im[0].cpu().numpy()))
     del full_im
 
     metadata : List[int] = []
@@ -1281,7 +1281,6 @@ folder : str, name : str, metric : str, value : float):
     if(not os.path.exists(temp_folder_path)):
         os.makedirs(temp_folder_path)
     
-    imageio.imwrite(os.path.join(folder,name+"compressed.png"), toImg(full_im[0].cpu().numpy()))
     for i in range(full_im.shape[1]):
         d = full_im.cpu().numpy()[0,i]
         d_loc = os.path.join(temp_folder_path,"nn_data_"+str(i)+".dat")
@@ -1313,6 +1312,7 @@ folder : str, name : str, metric : str, value : float):
         os.system(command)
         os.system("rm " + d_loc)
     
+    imageio.imwrite(os.path.join(folder,name+"compressed.png"), toImg(full_im[0].cpu().numpy()))
     del full_im
 
     metadata : List[int] = []
