@@ -75,7 +75,7 @@ if __name__ == '__main__':
         data_channels = []
         f_size_kb = 0
         for i in range(args['channels']):            
-            command = "tthresh -i " + args['file'] + ".dat -s" + \
+            command = "tthresh -i " + args['file'] + ".dat -s " + \
                 str(args['nx']) + " " + str(args['ny'])
             if(args['dims'] == 3):
                 command = command + " " + str(args['nz'])
