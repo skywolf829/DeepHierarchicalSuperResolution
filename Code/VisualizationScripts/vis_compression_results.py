@@ -42,6 +42,7 @@ if __name__ == '__main__':
         'font.size'   : 12}
     plt.rcParams.update(font)
 
+    print(results.keys())
     for method in results.keys():
         file_size = results[method]['file_size']
         compression_ratios = full_file_size / np.array(file_size)
