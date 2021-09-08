@@ -16,6 +16,8 @@ from models import load_models
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import copy
 import threading
+import imageio
+
 
 def get_location2D(full_height: int, full_width : int, depth : int, index : int) -> Tuple[int, int]:
     final_x : int = 0
@@ -324,22 +326,30 @@ class UpscalingMethod(nn.Module):
     def forward(self, in_frame : torch.Tensor, scale_factor : float,
     lod : Optional[int] = None) -> torch.Tensor:
         with torch.no_grad():
-            if(self.method == "liniear" and len(in_frame.shape) == 4):
-                up = F.interpolate(in_frame, mode='bilinear', scale_factor=scale_factor)
+            if(self.method == "linear"):
+                up = F.interpolate(in_frame, 
+                    mode='bilinear' if len(in_frame.shape) == 4 else "trilinear", 
+                    scale_factor=scale_factor)
             elif(self.method == "bicubic"):
                 up = F.interpolate(in_frame, mode='bicubic', scale_factor=scale_factor)
             elif(self.method == "nearest"):
                 up = F.interpolate(in_frame, mode="nearest", scale_factor=scale_factor)
-            elif(self.method == "linear" and len(in_frame.shape) == 5):
-                up = F.interpolate(in_frame, mode="trilinear", scale_factor=scale_factor)
             elif(self.method == "model"):
                 up = in_frame
                 while(scale_factor > 1):
-                    if not self.distributed:
-                        up = self.models[len(self.models)-lod](up)
+                    if(len(self.models) - lod < 0):
+                        print("Model not supported for downscaling level " + str(lod) + \
+                            ", using interpolation instead")
+                        # Use interpolation instead
+                        up = F.interpolate(up, 
+                            mode='bilinear' if len(in_frame.shape) == 4 else "trilinear", 
+                            scale_factor=2)
                     else:
-                        up = generate_by_patch_parallel(self.models[len(self.models)-lod], 
-                            up, 140, 10, self.devices)
+                        if not self.distributed:
+                            up = self.models[len(self.models)-lod](up)
+                        else:
+                            up = generate_by_patch_parallel(self.models[len(self.models)-lod], 
+                                up, 140, 10, self.devices)
                     scale_factor = int(scale_factor / 2)
                     lod -= 1
             else:
@@ -378,7 +388,6 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     upscale):
     restored_volume = torch.zeros(full_shape).to(octree[0].data.device)
     
-    # 1. Fill in known data
     for i in range(len(octree)):
         curr_node = octree[i]
         if(len(octree[0].data.shape) == 4):
@@ -392,6 +401,100 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     
     return restored_volume
 
+def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int]) \
+    -> Tuple[torch.Tensor, torch.Tensor]:
+    device = octree[0].data.device
+
+    if(len(octree[0].data.shape) == 4):
+        full_img = torch.zeros([full_shape[0], 3, full_shape[2], full_shape[3]]).to(device)
+    elif(len(octree[0].data.shape) == 5):
+        full_img = torch.zeros([full_shape[0], 3, full_shape[2], full_shape[3], full_shape[4]]).to(device)
+    # palette here: https://www.pinterest.com/pin/432978951683169251/?d=t&mt=login
+    # morandi colors
+    # https://colorbrewer2.org/#type=sequential&scheme=YlOrRd&n=6
+    cmap : List[torch.Tensor] = [
+        torch.tensor([[255,255,255]], dtype=octree[0].data.dtype, device=device),
+        torch.tensor([[255,255,178]], dtype=octree[0].data.dtype, device=device),
+        torch.tensor([[254,217,118]], dtype=octree[0].data.dtype, device=device),
+        torch.tensor([[254,178,76]], dtype=octree[0].data.dtype, device=device),
+        torch.tensor([[253,141,60]], dtype=octree[0].data.dtype, device=device),
+        torch.tensor([[252,78,42]], dtype=octree[0].data.dtype, device=device),
+        torch.tensor([[227,26,28]], dtype=octree[0].data.dtype, device=device),        
+        torch.tensor([[177,0,38]], dtype=octree[0].data.dtype, device=device)
+    ]
+    for i in range(len(cmap)):
+        cmap[i] = cmap[i].unsqueeze(2).unsqueeze(3)
+        if(len(octree[0].data.shape) == 5):
+            cmap[i] = cmap[i].unsqueeze(4)
+
+    for i in range(len(octree)):
+        curr_node = octree[i]
+        if(len(octree[0].data.shape) == 4):
+            x_start, y_start = get_location2D(full_shape[2], full_shape[3], curr_node.depth, curr_node.index)
+            s : int = curr_node.LOD
+            full_img[:,:,
+                int(x_start): \
+                int(x_start)+ \
+                    int((curr_node.data.shape[2]*(2**curr_node.LOD))),
+                int(y_start): \
+                int(y_start)+ \
+                    int((curr_node.data.shape[3]*(2**curr_node.LOD)))
+            ] = torch.zeros([full_shape[0], 3, 
+            curr_node.data.shape[2]*(2**curr_node.LOD),
+            curr_node.data.shape[3]*(2**curr_node.LOD)])
+            full_img[:,:,
+                int(x_start)+1: \
+                int(x_start)+ \
+                    int((curr_node.data.shape[2]*(2**curr_node.LOD)))-1,
+                int(y_start)+1: \
+                int(y_start)+ \
+                    int((curr_node.data.shape[3]*(2**curr_node.LOD)))-1
+            ] = cmap[s].repeat(full_shape[0], 1, 
+            int((curr_node.data.shape[2]*(2**curr_node.LOD)))-2, 
+            int((curr_node.data.shape[3]*(2**curr_node.LOD)))-2)
+        elif(len(octree[0].data.shape) == 5):
+            x_start, y_start, z_start = get_location3D(full_shape[2], full_shape[3], full_shape[4],
+            curr_node.depth, curr_node.index)
+            s : int = curr_node.LOD
+            full_img[:,:,
+                int(x_start): \
+                int(x_start)+ \
+                    int((curr_node.data.shape[2]*(2**curr_node.LOD))),
+                int(y_start): \
+                int(y_start)+ \
+                    int((curr_node.data.shape[3]*(2**curr_node.LOD))),
+                int(z_start): \
+                int(z_start)+ \
+                    int((curr_node.data.shape[4]*(2**curr_node.LOD)))
+            ] = torch.zeros([full_shape[0], 3, 
+            curr_node.data.shape[2]*(2**curr_node.LOD),
+            curr_node.data.shape[3]*(2**curr_node.LOD),
+            curr_node.data.shape[4]*(2**curr_node.LOD)])
+            full_img[:,:,
+                int(x_start)+1: \
+                int(x_start)+ \
+                    int((curr_node.data.shape[2]*(2**curr_node.LOD)))-1,
+                int(y_start)+1: \
+                int(y_start)+ \
+                    int((curr_node.data.shape[3]*(2**curr_node.LOD)))-1,
+                int(z_start)+1: \
+                int(z_start)+ \
+                    int((curr_node.data.shape[4]*(2**curr_node.LOD)))-1
+            ] = cmap[s].repeat(full_shape[0], 1, 
+            int((curr_node.data.shape[2]*(2**curr_node.LOD)))-2, 
+            int((curr_node.data.shape[3]*(2**curr_node.LOD)))-2,
+            int((curr_node.data.shape[4]*(2**curr_node.LOD)))-2)
+    cmap_img_height : int = 64
+    cmap_img_width : int = 512
+    cmap_img = torch.zeros([cmap_img_width, cmap_img_height, 3], dtype=torch.float, device=device)
+    y_len : int = int(cmap_img_width / len(cmap))
+    for i in range(len(cmap)):
+        y_start : int = i * y_len
+        y_end : int = (i+1) * y_len
+        cmap_img[y_start:y_end, :, :] = torch.squeeze(cmap[i])
+
+    return full_img, cmap_img
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
@@ -403,7 +506,10 @@ if __name__ == '__main__':
     parser.add_argument('--distributed',default="False",type=str2bool,help='Whether or not to upscale the volume in parallel on GPUs available')
     parser.add_argument('--device',default="cuda:0",type=str)
     parser.add_argument('--save_original_volume',default="True",type=str2bool,help='Write out the original volume as an NC for visualization too.')
-
+    parser.add_argument('--save_downscaling_levels',default="True",
+        type=str2bool,help='Write out the octree downscaling levels as images for visualization too.')
+    parser.add_argument('--seams',default="False",
+        type=str2bool,help='Upscale blocks individually instead of using our MRSR algorithm')
     args = vars(parser.parse_args())
     
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
@@ -428,13 +534,32 @@ if __name__ == '__main__':
     
     print("Upscaling volume")
     start_time = time.time()
-    MRSR_volume = upscale_volume(octree, volume.shape, upscale)
+    if(args['seams']):
+        MRSR_volume = upscale_volume_seams(octree, volume.shape, upscale)
+    else:
+        MRSR_volume = upscale_volume(octree, volume.shape, upscale)
     end_time = time.time()
     print("It took %0.02f seconds to upscale the volume with %s" % \
         (end_time - start_time, args['upscaling_method']))
 
+    if(args['upscaling_method'] == "model"):
+        total_inference_calls = 0
+        if(args['seams']):
+            for i in range(len(octree)):
+                total_inference_calls += octree[i].LOD
+        else:
+            total_inference_calls = octree.max_LOD()
+        print("Total number of inference calls was %i" % total_inference_calls)
+    p = PSNR_torch(MRSR_volume, volume).item()
+    if(len(volume.shape) == 4):
+        s = ssim(MRSR_volume, volume).item()
+    elif len(volume.shape) == 5 and args['distributed']:
+        s = ssim3D_distributed(MRSR_volume, volume).item()
+    else:
+        s = ssim3D(MRSR_volume, volume).item()
+
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
-    rootgrp = Dataset(os.path.join(save_folder, args['save_name']+".nc"), "w", format="NETCDF4")
+    rootgrp = Dataset(os.path.join(save_folder, args['save_name']), "w", format="NETCDF4")
     rootgrp.createDimension("u")
     rootgrp.createDimension("v")
     if(len(MRSR_volume.shape) == 5):
@@ -460,16 +585,21 @@ if __name__ == '__main__':
             dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
         dim_0[:] = volume[0,0].cpu().numpy()
 
+    if(args['save_downscaling_levels']):
+        print("Saving downscaling level images to " + os.path.join(save_folder, args['volume_file']+".nc"))
+        downscaling_levels_img, cmap_img = \
+            upscale_volume_downscalinglevels(octree, volume.shape)
+        if(len(downscaling_levels_img.shape) == 5):
+            downscaling_levels_img = downscaling_levels_img[..., int(downscaling_levels_img.shape[-1]/2)+1]
+        imageio.imwrite(os.path.join(save_folder, args['octree_file'] + ".png"),
+            downscaling_levels_img.cpu()[0].permute(1, 2, 0).numpy())
+        imageio.imwrite(os.path.join(save_folder, args['octree_file'] + "_cmap.png"),
+            cmap_img.cpu().numpy())
+
     print()
     print("################################# Statistics/metrics #################################")
     print()
 
-    p = PSNR_torch(MRSR_volume, volume).item()
-    if(len(volume.shape) == 4):
-        s = ssim(MRSR_volume, volume).item()
-    elif len(volume.shape) == 5 and args['distributed']:
-        s = ssim3D_distributed(MRSR_volume, volume).item()
-    else:
-        s = ssim3D(MRSR_volume, volume).item()
+    
 
     print("PSNR: %0.02f, SSIM: %0.02f" % (p, s))

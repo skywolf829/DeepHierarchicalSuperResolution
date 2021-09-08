@@ -346,7 +346,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_name',default="Plume.octree",type=str,help='Name for trial in results.pkl')
     parser.add_argument('--epsilon',default=0.1,type=float,help='PSNR to start tests at')
     
-    parser.add_argument('--max_downscaling_level',default=4,type=int,help="The maximum downscaling level to support in the created octree")
+    parser.add_argument('--max_downscaling_level',default=3,type=int,help="The maximum downscaling level to support in the created octree")
     parser.add_argument('--min_chunk',default=2,type=int,help="Minimum block size to reduce")
     parser.add_argument('--device',default="cuda:0",type=str)
 
