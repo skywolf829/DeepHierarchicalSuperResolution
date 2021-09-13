@@ -3,6 +3,7 @@ from utility_functions import create_folder, print_to_log_and_console, weights_i
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.utils.spectral_norm as spectral_norm
 import os
 import math
 from options import *
@@ -188,6 +189,68 @@ class RRDB(nn.Module):
         db3_out = self.db3(db2_out) * self.B_const + db2_out
         out = db3_out * self.B_const + x
         return out
+
+class IB(nn.Module):
+    def __init__ (self,in_c,out_c,opt):
+        super(IB, self).__init__()
+        if(opt['mode'] == "2D"):
+            conv_layer = nn.Conv2d
+        elif(opt['mode'] == "3D"):
+            conv_layer = nn.Conv3d
+        self.c1 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
+        self.c2 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
+        self.c3 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
+
+        self.c4 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
+
+        self.path1 = nn.Sequential(
+            spectral_norm(self.c1),            
+            nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
+            spectral_norm(self.c2),            
+            nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
+            spectral_norm(self.c3)            
+        )
+
+        self.path2 = nn.Sequential(
+            spectral_norm(self.c4)
+        )
+
+    def forward(self,x):
+        p1 = self.path1(x)
+        p2 = self.path2(x)
+        return p1+p2
+
+class SSRTVD_G(nn.Module):
+    def __init__ (self,opt):
+        super(SSRTVD_G, self).__init__()
+        
+        self.IB1 = IB(1, 16)
+        self.IB2 = IB(16, 64)
+        self.IB3 = IB(64+16, 128)
+
+       
+        self.deconv1 = nn.ConvTranspose3d(128, 128, 4, 1) if opt['mode'] == "3D" else nn.ConvTranspose2d(128, 128, 4, 1)
+        self.deconv1_IB1 = IB(128, 128)
+        self.deconv1_IB2 = IB(128+128, 64)
+
+        self.deconv2 = nn.ConvTranspose3d(64, 32, 4, 1) if opt['mode'] == "3D" else nn.ConvTranspose2d(64, 32, 4, 1)
+        self.deconv2_IB1 = IB(32, 8)
+        self.deconv2_IB2 = IB(8+32, 1)
+
+    def forward(self,x):
+        x = F.relu(self.IB1(x))
+        x_concat = F.relu(self.IB2(x))
+        x = torch.cat([x, x_concat], dim=1)
+        x = F.relu(self.IB3(x))
+        x = F.relu(self.decon1(x))
+        x_concat = self.deconv1_IB1(x)
+        x = torch.cat([x, x_concat], dim=1)
+        x = F.relu(self.deconv1_IB2(x))
+        x = F.relu(self.deconv2(x))
+        x_concat = F.relu(self.deconv2_IB1(x))
+        x = torch.cat([x, x_concat], dim=1)
+        x = F.tanh(self.deconv2_IB2(x))
+        return x
 
 class Generator(nn.Module):
     def __init__ (self, resolution, opt):
