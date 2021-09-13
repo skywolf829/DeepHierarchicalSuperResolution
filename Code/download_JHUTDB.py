@@ -85,26 +85,26 @@ sim_name, timestep, field, num_components, num_workers):
            full[x1:x2,y1:y2,z1:z2,:] = r.astype(np.float32)
            del r
            done += 1
-           print("Done: %i/%i" % (done, len(threads)))
+           #print("Done: %i/%i" % (done, len(threads)))
     return full
 
 project_folder_path = os.path.dirname(os.path.abspath(__file__))
 project_folder_path = os.path.join(project_folder_path, "..")
 data_folder = os.path.join(project_folder_path, "Data", "SuperResolutionData")
-save_folder = os.path.join(data_folder, "Isomag2D", "TrainingData")
+save_folder = os.path.join(data_folder, "Mixing3D", "TrainingData")
 
-name = "isotropic1024coarse"
+name = "mixing"
 t0 = time.time()
 count = 0
 startts = 1
-endts = 5028
+endts = 1000
 ts_skip = 10
 frames = []
 for i in range(startts, endts, ts_skip):
     print("TS %i/%i" % (i, endts))
-    f = get_full_frame_parallel(0, 1024, 1,#x
-    0, 1024, 1, #y
-    512, 513, 1, #z
+    f = get_full_frame_parallel(0, 1024, 2,#x
+    0, 1024, 2, #y
+    0, 1024, 2, #z
     name, i, 
     "u", 3, 
     16)    
