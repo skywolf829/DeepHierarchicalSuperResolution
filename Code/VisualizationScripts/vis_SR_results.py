@@ -49,6 +49,7 @@ if __name__ == '__main__':
 
     for scale_factor in results.keys():
         model_results = results[scale_factor]["model"]
+        model_noGAN_results = results[scale_factor]["model_noGAN"]
         interp_results = results[scale_factor][interp]
 
 
@@ -62,6 +63,13 @@ if __name__ == '__main__':
                 args['ts_skip'])
             y = model_results[metric]
             plt.plot(x, y, label="model")
+
+            # model_noGAN results plotting
+            x = np.arange(args['start_ts'], 
+                args['start_ts'] + args['ts_skip']*len(model_noGAN_results[metric]),
+                args['ts_skip'])
+            y = model_noGAN_results[metric]
+            plt.plot(x, y, label="model_noGAN")
 
             # interpolation results plotting
             x = np.arange(args['start_ts'], 

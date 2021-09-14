@@ -364,7 +364,11 @@ if __name__ == '__main__':
                 for k in frame_results.keys():
                     this_scale_results[interp][k].append(frame_results[k])
 
-            all_results[scale_factor_in_testing] = this_scale_results
+            if(scale_factor_in_testing not in all_results.keys()):
+                all_results[scale_factor_in_testing] = {}
+
+            for k1 in this_scale_results.keys():                
+                all_results[scale_factor_in_testing] = this_scale_results[k1]
     
     save_obj(all_results, results_location)
     print("Saved results")
