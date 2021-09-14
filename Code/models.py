@@ -252,6 +252,52 @@ class SSRTVD_G(nn.Module):
         x = F.tanh(self.deconv2_IB2(x))
         return x
 
+class SSRTVD_D_S(nn.Module):
+    def __init__ (self,opt):
+        super(SSRTVD_D_S, self).__init__()
+        if(opt['mode'] == "2D"):
+            conv_layer = nn.Conv2d
+        elif(opt['mode'] == "3D"):
+            conv_layer = nn.Conv3d
+
+        self.model = nn.Sequential(
+            spectral_norm(conv_layer(1, 64, 4, 2)),
+            nn.LeakyReLU(0.2),
+            spectral_norm(conv_layer(64, 128, 4, 2)),
+            nn.LeakyReLU(0.2),
+            spectral_norm(conv_layer(128, 256, 4, 2)),
+            nn.LeakyReLU(0.2),
+            spectral_norm(conv_layer(256, 512, 4, 2)),
+            nn.LeakyReLU(0.2),
+            conv_layer(512, 1, 4, 2)
+        )
+
+    def forward(self,x):
+        return self.model(x).mean()
+
+class SSRTVD_D_T(nn.Module):
+    def __init__ (self,opt):
+        super(SSRTVD_D_T, self).__init__()
+        if(opt['mode'] == "2D"):
+            conv_layer = nn.Conv2d
+        elif(opt['mode'] == "3D"):
+            conv_layer = nn.Conv3d
+
+        self.model = nn.Sequential(
+            spectral_norm(conv_layer(3, 64, 4, 2)),
+            nn.LeakyReLU(0.2),
+            spectral_norm(conv_layer(64, 128, 4, 2)),
+            nn.LeakyReLU(0.2),
+            spectral_norm(conv_layer(128, 256, 4, 2)),
+            nn.LeakyReLU(0.2),
+            spectral_norm(conv_layer(256, 512, 4, 2)),
+            nn.LeakyReLU(0.2),
+            conv_layer(512, 1, 4, 2)
+        )
+
+    def forward(self,x):
+        return self.model(x).mean()
+
 class Generator(nn.Module):
     def __init__ (self, resolution, opt):
         super(Generator, self).__init__()
