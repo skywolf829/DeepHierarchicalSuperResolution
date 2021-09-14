@@ -368,7 +368,7 @@ if __name__ == '__main__':
                 all_results[scale_factor_in_testing] = {}
 
             for k1 in this_scale_results.keys():                
-                all_results[scale_factor_in_testing] = this_scale_results[k1]
+                all_results[scale_factor_in_testing][k1] = this_scale_results[k1]
     
     save_obj(all_results, results_location)
     print("Saved results")
