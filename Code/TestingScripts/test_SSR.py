@@ -276,7 +276,7 @@ if __name__ == '__main__':
     }
     if(os.path.exists(results_location)):
         all_results = load_obj(results_location)
-
+    print(all_results)
     if args['mode'] == "2D":
         interp = "bilinear"
     else:
