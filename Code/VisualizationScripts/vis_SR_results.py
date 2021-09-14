@@ -62,14 +62,14 @@ if __name__ == '__main__':
                 args['start_ts'] + args['ts_skip']*len(model_results[metric]),
                 args['ts_skip'])
             y = model_results[metric]
-            plt.plot(x, y, label="model")
+            plt.plot(x, y, label="GAN")
 
             # model_noGAN results plotting
             x = np.arange(args['start_ts'], 
                 args['start_ts'] + args['ts_skip']*len(model_noGAN_results[metric]),
                 args['ts_skip'])
             y = model_noGAN_results[metric]
-            plt.plot(x, y, label="model_noGAN")
+            plt.plot(x, y, label="CNN")
 
             # interpolation results plotting
             x = np.arange(args['start_ts'], 
@@ -90,12 +90,14 @@ if __name__ == '__main__':
 
     averaged_results = {}
     averaged_results['model'] = {}
+    averaged_results['model_noGAN'] = {}
     averaged_results[interp] = {}
 
     scale_factors = []
 
     for scale_factor in results.keys():
         model_results = results[scale_factor]["model"]
+        model_noGAN_results = results[scale_factor]["model_noGAN"]
         interp_results = results[scale_factor][interp]
 
         scale_factor_int = int(scale_factor.split('x')[0])
@@ -104,9 +106,12 @@ if __name__ == '__main__':
         for metric in model_results.keys():
             if(metric not in averaged_results['model'].keys()):
                 averaged_results['model'][metric] = []
+                averaged_results['model_noGAN'][metric] = []
                 averaged_results[interp][metric] = []
             averaged_results['model'][metric].append(np.median(np.array(model_results[metric])))
+            averaged_results['model_noGAN'][metric].append(np.median(np.array(model_noGAN_results[metric])))
             averaged_results[interp][metric].append(np.median(np.array(interp_results[metric])))
+
     
     for metric in model_results.keys():
         fig = plt.figure()
@@ -115,7 +120,12 @@ if __name__ == '__main__':
         # model results plotting
         x = scale_factors
         y = averaged_results['model'][metric]
-        plt.plot(x, y, label="model")
+        plt.plot(x, y, label="GAN")
+
+        # model_noGAN results plotting
+        x = scale_factors
+        y = averaged_results['model_noGAN'][metric]
+        plt.plot(x, y, label="CNN")
 
         # interpolation results plotting
         x = scale_factors
@@ -142,8 +152,15 @@ if __name__ == '__main__':
     x = scale_factors
     left_y = averaged_results['model'][left_y_label]
     right_y = averaged_results['model'][right_y_label]
-    ax1.plot(x, left_y, label='model', marker='s')
-    ax2.plot(x, right_y, label='model', linestyle='dashed', marker='^')
+    ax1.plot(x, left_y, label='GAN', marker='s')
+    ax2.plot(x, right_y, label='GAN', linestyle='dashed', marker='^')
+
+    # model noGAN
+    x = scale_factors
+    left_y = averaged_results['model_noGAN'][left_y_label]
+    right_y = averaged_results['model_noGAN'][right_y_label]
+    ax1.plot(x, left_y, label='CNN', marker='s')
+    ax2.plot(x, right_y, label='CNN', linestyle='dashed', marker='^')
 
     # interpolation results plotting
     x = scale_factors
