@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import copy
-from utility_functions import ssim, ssim3D, save_obj
+from utility_functions import ssim, ssim3D, save_obj, load_obj
 
 
 def mse_func(GT, x, device):
@@ -236,6 +236,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_folder',default="Isomag3D",type=str,help='Name of dataset to test')
     parser.add_argument('--model_name',default="Isomag3D",type=str,help='The folder with the model to load')
     parser.add_argument('--device',default="cuda:0",type=str,help='Device to use for testing')
+    parser.add_argument('--dict_entry_name',default="model",type=str,help='Name for model in dict')    
     parser.add_argument('--parallel',default="False",type=str2bool,help='Perform SR in parallel')
     parser.add_argument('--test_on_gpu',default="True",type=str2bool,help='Metrics calculated on GPU?')
     parser.add_argument('--output_file_name',default="Isomag3D.results",type=str,help='Where to write results')
@@ -273,6 +274,8 @@ if __name__ == '__main__':
     all_results = {
 
     }
+    if(os.path.exists(results_location)):
+        all_results = load_obj(results_location)
 
     if args['mode'] == "2D":
         interp = "bilinear"
@@ -290,7 +293,7 @@ if __name__ == '__main__':
                     "SSIM": [],
                     "MRE": []
                 },
-                "model": {
+                args['dict_entry_name']: {
                     "Upscaling time": [],
                     "MSE": [],
                     "PSNR (dB)": [],
@@ -339,9 +342,9 @@ if __name__ == '__main__':
                     (inference_this_frame, str(LR_data.shape)))
                 frame_results = get_test_results(GT_data, x, args['mode'])
                 print("Model: " + str(frame_results))
-                this_scale_results["model"]['Upscaling time'].append(inference_this_frame)
+                this_scale_results[args['dict_entry_name']]['Upscaling time'].append(inference_this_frame)
                 for k in frame_results.keys():
-                    this_scale_results["model"][k].append(frame_results[k])
+                    this_scale_results[args['dict_entry_name']][k].append(frame_results[k])
 
 
                 inference_start_time = time.time()
