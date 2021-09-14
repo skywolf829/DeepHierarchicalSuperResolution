@@ -36,6 +36,22 @@ def save_models(generators, discriminators, opt):
 
     save_options(opt, path_to_save)
 
+def save_SSRTVD_models(generator, discriminator_s, discriminator_t, opt):
+    folder = create_folder(opt["save_folder"], opt["save_name"])
+    path_to_save = os.path.join(opt["save_folder"], folder)
+    print_to_log_and_console("Saving model to %s" % (path_to_save), 
+    os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+
+    
+    gen_states = generator.state_dict()
+    torch.save(gen_states, os.path.join(path_to_save, "generator"))
+    discriminator_s_states = discriminator_s.state_dict()
+    torch.save(discriminator_s_states, os.path.join(path_to_save, "discriminator_s"))
+    discriminator_t_states = discriminator_t.state_dict()
+    torch.save(discriminator_t_states, os.path.join(path_to_save, "discriminator_t"))
+
+    save_options(opt, path_to_save)
+
 def load_models(opt, device):
     generators = []
     discriminators = []
@@ -89,6 +105,73 @@ def load_models(opt, device):
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
     
     return  generators, discriminators
+
+def load_SSRTVD_models(opt, device):
+    generators = []
+    discriminators = []
+    load_folder = os.path.join(opt["save_folder"], opt["save_name"])
+
+    if not os.path.exists(load_folder):
+        print_to_log_and_console("%s doesn't exist, load failed" % load_folder, 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+        return
+
+    from collections import OrderedDict
+    if os.path.exists(os.path.join(load_folder, "generator")):
+        gen_params = torch.load(os.path.join(load_folder, "generator"),
+        map_location=device)
+        gen_params_compat = OrderedDict()
+        for k, v in gen_params.items():
+            if("module" in k):
+                gen_params_compat[k[7:]] = v
+            else:
+                gen_params_compat[k] = v
+        generator = SSRTVD_G(opt)
+        generator.load_state_dict(gen_params_compat)
+
+        print_to_log_and_console("Successfully loaded generator", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+    else:
+        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "generators", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+
+    if os.path.exists(os.path.join(load_folder, "discriminator_s")):
+        params = torch.load(os.path.join(load_folder, "discriminator_s"),
+        map_location=device)
+        params_compat = OrderedDict()
+        for k, v in params.items():
+            if("module" in k):
+                params_compat[k[7:]] = v
+            else:
+                params_compat[k] = v
+        d_s = SSRTVD_D_S(opt)
+        d_s.load_state_dict(params_compat)
+
+        print_to_log_and_console("Successfully loaded discriminator_s", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+    else:
+        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "s_discriminators", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+
+    if os.path.exists(os.path.join(load_folder, "discriminator_t")):
+        params = torch.load(os.path.join(load_folder, "discriminator_t"),
+        map_location=device)
+        params_compat = OrderedDict()
+        for k, v in params.items():
+            if("module" in k):
+                params_compat[k[7:]] = v
+            else:
+                params_compat[k] = v
+        d_t = SSRTVD_D_T(opt)
+        d_t.load_state_dict(params_compat)
+
+        print_to_log_and_console("Successfully loaded discriminator_t", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+    else:
+        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "s_discriminators", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+    
+    return generator, d_s, d_t
 
 def calc_gradient_penalty(discrim, real_data, fake_data, LAMBDA, device):
     #print real_data.size()
@@ -204,15 +287,15 @@ class IB(nn.Module):
         self.c4 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
 
         self.path1 = nn.Sequential(
-            spectral_norm(self.c1),            
+            spectral_norm(self.c1, epsilon=1e-4),            
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
-            spectral_norm(self.c2),            
+            spectral_norm(self.c2, epsilon=1e-4),            
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
-            spectral_norm(self.c3)            
+            spectral_norm(self.c3, epsilon=1e-4)            
         )
 
         self.path2 = nn.Sequential(
-            spectral_norm(self.c4)
+            spectral_norm(self.c4, epsilon=1e-4)
         )
 
     def forward(self,x):
@@ -261,13 +344,13 @@ class SSRTVD_D_S(nn.Module):
             conv_layer = nn.Conv3d
 
         self.model = nn.Sequential(
-            spectral_norm(conv_layer(1, 64, 4, 2)),
+            spectral_norm(conv_layer(1, 64, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(64, 128, 4, 2)),
+            spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(128, 256, 4, 2)),
+            spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(256, 512, 4, 2)),
+            spectral_norm(conv_layer(256, 512, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
             conv_layer(512, 1, 4, 2)
         )
@@ -284,13 +367,13 @@ class SSRTVD_D_T(nn.Module):
             conv_layer = nn.Conv3d
 
         self.model = nn.Sequential(
-            spectral_norm(conv_layer(3, 64, 4, 2)),
+            spectral_norm(conv_layer(3, 64, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(64, 128, 4, 2)),
+            spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(128, 256, 4, 2)),
+            spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(256, 512, 4, 2)),
+            spectral_norm(conv_layer(256, 512, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
             conv_layer(512, 1, 4, 2)
         )
