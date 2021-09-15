@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 import copy
-from utility_functions import ssim, ssim3D, save_obj, load_obj
+from utility_functions import ssim, ssim3D, ssim3D_distributed, save_obj, load_obj
 
 
 def mse_func(GT, x, device):
@@ -217,14 +217,17 @@ def generate_by_patch_parallel(generator, input_volume, patch_size, receptive_fi
     
     return final_volume
 
-def get_test_results(GT, x, mode):
+def get_test_results(GT, x, mode, distributed=False):
     p = psnr_func(GT, x, GT.device).item()
     ms = mse_func(GT, x, GT.device).item()
     mr = mre_func(GT, x, GT.device).item()
     if(mode == "2D"):
         s = ssim(GT, x).item()
     else:
-        s = ssim3D(GT, x).item()
+        if not distributed:
+            s = ssim3D(GT, x).item()
+        else:            
+            s = ssim3D_distributed(GT, x).item()
 
     return {"PSNR (dB)": p, "SSIM": s, "MSE": ms, "MRE": mr}
 
