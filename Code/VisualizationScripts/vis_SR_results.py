@@ -48,6 +48,7 @@ if __name__ == '__main__':
     interp = "bilinear" if args['mode'] == "2D" else "trilinear"
 
     for scale_factor in results.keys():
+        print(scale_factor)
         model_results = results[scale_factor]["model"]
         model_noGAN_results = results[scale_factor]["model_noGAN"]
         interp_results = results[scale_factor][interp]
