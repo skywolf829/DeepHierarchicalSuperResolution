@@ -361,7 +361,7 @@ if __name__ == '__main__':
                 inference_end_time = time.time()                
                 inference_this_frame = inference_end_time - inference_start_time
 
-                frame_results = get_test_results(GT_data, x, args['mode'])
+                frame_results = get_test_results(GT_data, x, args['mode'], args['parallel'])
                 print("Interpolation: " + str(frame_results))
                 this_scale_results[interp]['Upscaling time'].append(inference_this_frame)
                 for k in frame_results.keys():
