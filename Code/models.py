@@ -1,4 +1,6 @@
 from __future__ import absolute_import, division, print_function
+
+from torch.nn.modules import conv
 from utility_functions import create_folder, print_to_log_and_console, weights_init
 import torch
 import torch.nn as nn
@@ -15,7 +17,7 @@ data_folder = os.path.join(project_folder_path, "Data", "SuperResolutionData")
 output_folder = os.path.join(project_folder_path, "Output")
 save_folder = os.path.join(project_folder_path, "SavedModels")
 
-def save_models(generators, discriminators, opt):
+def save_models(generators, discriminators, opt, discriminators_t = None):
     folder = create_folder(opt["save_folder"], opt["save_name"])
     path_to_save = os.path.join(opt["save_folder"], folder)
     print_to_log_and_console("Saving model to %s" % (path_to_save), 
@@ -33,6 +35,12 @@ def save_models(generators, discriminators, opt):
         for i in range(len(discriminators)):
             discrim_states[str(i)] = discriminators[i].state_dict()
         torch.save(discrim_states, os.path.join(path_to_save, "discriminators"))
+
+        if(discriminators_t is not None):
+            discrim_states = {}
+            for i in range(len(discriminators_t)):
+                discrim_states[str(i)] = discriminators_t[i].state_dict()
+            torch.save(discrim_states, os.path.join(path_to_save, "discriminators_t"))
 
     save_options(opt, path_to_save)
 
@@ -55,6 +63,7 @@ def save_SSRTVD_models(generator, discriminator_s, discriminator_t, opt):
 def load_models(opt, device):
     generators = []
     discriminators = []
+    discriminators_t = []
     load_folder = os.path.join(opt["save_folder"], opt["save_name"])
 
     if not os.path.exists(load_folder):
@@ -103,8 +112,31 @@ def load_models(opt, device):
     else:
         print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "s_discriminators", 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
+
+    if os.path.exists(os.path.join(load_folder, "discriminators_t")):
+        discrim_params = torch.load(os.path.join(load_folder, "discriminators_t"),
+            map_location=device)
+        for i in range(opt["n"]):
+            if(str(i) in discrim_params.keys()):
+                discrim_params_compat = OrderedDict()
+                for k, v in discrim_params[str(i)].items():
+                    if(k[0:7] == "module."):
+                        discrim_params_compat[k[7:]] = v
+                    else:
+                        discrim_params_compat[k] = v
+                discriminator_t = init_discrim_t(i, opt)
+                discriminator_t.load_state_dict(discrim_params_compat)
+                discriminators_t.append(discriminator_t)
+        print_to_log_and_console("Successfully loaded discriminators_t", 
+        os.path.join(opt["save_folder"],opt["save_name"]), "log.txt")
+    else:
+        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "s_discriminators", 
+        os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
     
-    return  generators, discriminators
+    if(os.path.exists(os.path.join(load_folder, "discriminators_t"))):
+        return generators, discriminators, discriminators_t
+    else:
+        return generators, discriminators
 
 def load_SSRTVD_models(opt, device):
     generators = []
@@ -219,13 +251,28 @@ def init_scales(opt, dataset):
         print("Scale %i: %s -> %s" % (opt["n"] - 1 - i, str(opt["resolutions"][i]), str(opt["resolutions"][i+1])))
 
 def init_gen(scale, opt):
-    generator = Generator(opt["resolutions"][scale+1], opt)
+    if(opt['model'] == "ESRGAN"):
+        generator = Generator(opt["resolutions"][scale+1], opt)
+    elif(opt['model'] == "SSRTVD"):
+        generator = SSRTVD_G_2x(opt["resolutions"][scale+1], opt)
+
     generator.apply(weights_init)
 
     return generator
 
 def init_discrim(scale, opt):
-    discriminator = Discriminator(opt["resolutions"][scale+1], opt)
+    if(opt['model'] == "ESRGAN"):
+        discriminator = Discriminator(opt["resolutions"][scale+1], opt)
+    elif(opt['model'] == "SSRTVD"):
+        discriminator = SSRTVD_D_S(opt)
+
+    discriminator.apply(weights_init)
+
+    return discriminator
+
+def init_discrim_t(scale, opt):
+    discriminator = SSRTVD_D_T(opt)
+
     discriminator.apply(weights_init)
 
     return discriminator
@@ -283,19 +330,22 @@ class IB(nn.Module):
         self.c1 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
         self.c2 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
         self.c3 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
+        self.c4 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
 
-        self.c4 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
+        self.c5 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
 
         self.path1 = nn.Sequential(
             spectral_norm(self.c1, epsilon=1e-4),            
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
             spectral_norm(self.c2, epsilon=1e-4),            
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
-            spectral_norm(self.c3, epsilon=1e-4)            
+            spectral_norm(self.c3, epsilon=1e-4),
+            nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
+            spectral_norm(self.c4, epsilon=1e-4)     
         )
 
         self.path2 = nn.Sequential(
-            spectral_norm(self.c4, epsilon=1e-4)
+            spectral_norm(self.c5, epsilon=1e-4)
         )
 
     def forward(self,x):
@@ -335,6 +385,30 @@ class SSRTVD_G(nn.Module):
         x = F.tanh(self.deconv2_IB2(x))
         return x
 
+class SSRTVD_G_2x(nn.Module):
+    def __init__ (self,resolution,opt):
+        super(SSRTVD_G_2x, self).__init__()
+        self.resolution = resolution
+        self.IB1 = IB(1, 16)
+        self.IB2 = IB(16, 64)
+        self.IB3 = IB(64+16, 128)
+
+       
+        self.deconv = nn.ConvTranspose3d(128, 32, 4, 1) if opt['mode'] == "3D" else nn.ConvTranspose2d(128, 128, 4, 1)
+        self.deconv_IB1 = IB(32, 8)
+        self.deconv_IB2 = IB(8+32, 1)
+
+    def forward(self,x):
+        x = F.relu(self.IB1(x))
+        x_concat = F.relu(self.IB2(x))
+        x = torch.cat([x, x_concat], dim=1)
+        x = F.relu(self.IB3(x))
+        x = F.relu(self.deconv(x))
+        x_concat = F.relu(self.deconv_IB1(x))
+        x = torch.cat([x, x_concat], dim=1)
+        x = F.tanh(self.deconv_IB2(x))
+        return x
+
 class SSRTVD_D_S(nn.Module):
     def __init__ (self,opt):
         super(SSRTVD_D_S, self).__init__()
@@ -343,6 +417,7 @@ class SSRTVD_D_S(nn.Module):
         elif(opt['mode'] == "3D"):
             conv_layer = nn.Conv3d
 
+        # Input must be at least 96^(num_dims)
         self.model = nn.Sequential(
             spectral_norm(conv_layer(1, 64, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
@@ -468,32 +543,47 @@ class Discriminator(nn.Module):
             conv_layer = nn.Conv3d
             batchnorm_layer = nn.BatchNorm3d
 
-        modules = []
-        for i in range(opt['num_discrim_blocks']):
-            # The head goes from 3 channels (RGB) to num_kernels
-            if i == 0:
-                modules.append(nn.Sequential(
-                    create_conv_layer(conv_layer, opt['num_channels'], opt['num_kernels'], 
-                    opt['kernel_size'], opt['stride']),
-                    create_batchnorm_layer(batchnorm_layer, opt['num_kernels']),
-                    nn.LeakyReLU(0.2, inplace=True)
-                ))
-            # The tail will go from num_kernels to 1 channel for discriminator optimization
-            elif i == opt['num_discrim_blocks']-1:  
-                tail = nn.Sequential(
-                    create_conv_layer(conv_layer, opt['num_kernels'], 1, 
-                    opt['kernel_size'], opt['stride'])
-                )
-                modules.append(tail)
-            # Other layers will have 32 channels for the 32 kernels
-            else:
-                modules.append(nn.Sequential(
-                    create_conv_layer(conv_layer, opt['num_kernels'], opt['num_kernels'], 
-                    opt['kernel_size'], opt['stride']),
-                    create_batchnorm_layer(batchnorm_layer, opt['num_kernels']),
-                    nn.LeakyReLU(0.2, inplace=True)
-                ))
-        self.model =  nn.Sequential(*modules)
+        # Min size needed = 32^(num_dims)
+        self.model =  nn.Sequential(
+            conv_layer(opt['num_channels'], 64, kernel_size=opt['kernel_size'],
+                padding=0, stride=1),
+            nn.LeakyReLU(0.2),
+
+            conv_layer(64, 64, kernel_size=opt['kernel_size'],
+                padding=0, stride=2),
+            batchnorm_layer(64),
+            nn.LeakyReLU(0.2),
+
+            conv_layer(64, 128, kernel_size=opt['kernel_size'],
+                padding=0, stride=1),
+            batchnorm_layer(128),
+            nn.LeakyReLU(0.2),
+
+            conv_layer(128, 128, kernel_size=opt['kernel_size'],
+                padding=0, stride=2),
+            batchnorm_layer(128),
+            nn.LeakyReLU(0.2),
+
+            conv_layer(128, 256, kernel_size=opt['kernel_size'],
+                padding=0, stride=1),
+            batchnorm_layer(256),
+            nn.LeakyReLU(0.2),
+            
+            conv_layer(256, 256, kernel_size=opt['kernel_size'],
+                padding=0, stride=2),
+            batchnorm_layer(256),
+            nn.LeakyReLU(0.2),
+
+            conv_layer(256, 512, kernel_size=opt['kernel_size'],
+                padding=0, stride=1),
+            batchnorm_layer(512),
+            nn.LeakyReLU(0.2),
+
+            conv_layer(512, 512, kernel_size=opt['kernel_size'],
+                padding=0, stride=2),
+            batchnorm_layer(512),
+            nn.LeakyReLU(0.2)
+        )
 
     def forward(self, x):
         return self.model(x)

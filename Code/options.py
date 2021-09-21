@@ -6,6 +6,7 @@ class Options():
         opt = {}
         # Input info
         opt["mode"]                    = "3D"      # 2D or 3D
+        opt['model']                   = "ESRGAN"  # ESRGAN or SSRTVD 
         opt["data_folder"]             = "Isomag3D"
         opt["save_folder"]             = "SavedModels"
         opt["save_name"]               = "Temp"    # Folder that the model will be saved to
