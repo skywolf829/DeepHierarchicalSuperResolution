@@ -273,7 +273,7 @@ if __name__ == '__main__':
         for subfolder in subfolders:
             for f_name in os.listdir(os.path.join(data_folder, folder, subfolder)):
                 print(os.path.join(data_folder, folder, subfolder, f_name))
-                f = h5py.File(os.path.join(data_folder, folder, subfolder, f_name), 'x')
+                f = h5py.File(os.path.join(data_folder, folder, subfolder, f_name), 'w')
                 f_data = torch.tensor(f['data'])
                 f_data -= f_data.min()
                 f_data /= (f.data.max() + 1e-6)
