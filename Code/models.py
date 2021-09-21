@@ -110,7 +110,7 @@ def load_models(opt, device):
         print_to_log_and_console("Successfully loaded discriminators", 
         os.path.join(opt["save_folder"],opt["save_name"]), "log.txt")
     else:
-        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "s_discriminators", 
+        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "discriminators", 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
 
     if os.path.exists(os.path.join(load_folder, "discriminators_t")):
@@ -130,7 +130,7 @@ def load_models(opt, device):
         print_to_log_and_console("Successfully loaded discriminators_t", 
         os.path.join(opt["save_folder"],opt["save_name"]), "log.txt")
     else:
-        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "s_discriminators", 
+        print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "discriminators_t", 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
     
     if(os.path.exists(os.path.join(load_folder, "discriminators_t"))):
