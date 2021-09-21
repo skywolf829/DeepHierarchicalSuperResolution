@@ -125,7 +125,8 @@ def train(rank, generator, discriminator_s, discriminator_t, opt, dataset):
                 
                 D_S_loss.backward(retain_graph=True)
                 discriminator_s_optimizer.step()
-
+            
+            # Update discriminator_t
             for _ in range(2):
                 discriminator_s.zero_grad()
                 discriminator_t.zero_grad()
@@ -160,7 +161,7 @@ def train(rank, generator, discriminator_s, discriminator_t, opt, dataset):
                 G_loss += (-d_s_loss * 1e-3) #lambda_1
                 gen_adv_err = -d_s_loss.item()
 
-                d_t_loss = discriminator_s(fake)
+                d_t_loss = discriminator_t(fake)
                 G_loss += (-d_t_loss * 1e-3) #lambda_1
                 gen_adv_err += -d_t_loss.item()
 
