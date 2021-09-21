@@ -265,6 +265,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
             print("Epoch done")
         if(opt["alpha_2"] > 0.0):
             discriminator_scheduler.step()
+            if(opt['model'] == "SSRTVD"):
+                discriminator_t_scheduler.step()
         generator_scheduler.step()
         if(rank == 0):
             print("Step")
