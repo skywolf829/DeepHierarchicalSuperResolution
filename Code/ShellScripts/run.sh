@@ -6,7 +6,7 @@ python3 -u Code/train.py --save_name Isomag2D_ESRGAN --train_distributed True \
 --num_workers 0 --data_folder Isomag2D --mode 2D \
 --cropping_resolution 256 --patch_size 1024 --training_patch_size 1024 \
 --num_blocks 3 --epochs 50 --random_flipping true \
---min_dimension_size 32 --lr 0.0002 --alpha_1 1.0 --alpha_2 0.005 \
+--min_dimension_size 32 --g_lr 0.0002 --d_lr 0.0002 --alpha_1 1.0 --alpha_2 0.005 \
 --model ESRGAN --generator_steps 1 --discriminator_steps 1
 
 #python3 -u Code/train.py --save_name Isomag3D_noGAN --train_distributed True \
