@@ -266,7 +266,7 @@ class TrainingDataset(torch.utils.data.Dataset):
 
 
 if __name__ == '__main__':
-    folders = ['Vorts', 'Plume', 'Mixing3D', 'Isomag2D', 'Isomag3D']
+    folders = ['Mixing2D', 'Vorts', 'Plume', 'Mixing3D', 'Isomag2D', 'Isomag3D']
     subfolders = ['TrainingData', 'TestingData']
 
     for folder in folders:
