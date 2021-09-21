@@ -150,7 +150,6 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     generator.zero_grad()
                     D_loss = 0
                     
-                    print(real_hr.shape)
                     output_real = discriminator(
                         real_hr[:,1:2] if opt['model'] == "SSRTVD" else real_hr)
 
@@ -160,8 +159,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     
                     # Relativistic discriminator
                     if(opt['model'] == "ESRGAN"):
-                        D_loss = -torch.log(F.sigmoid(output_real.mean() - output_fake.mean())) - \
-                            torch.log(1-F.sigmoid(output_fake.mean() - output_real.mean()))
+                        D_loss = -torch.log(torch.sigmoid(output_real.mean() - output_fake.mean())) - \
+                            torch.log(1-torch.sigmoid(output_fake.mean() - output_real.mean()))
                     else:
                         D_loss = -output_real.mean() + output_fake.mean()
 
@@ -215,8 +214,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     else:
                         # spatial relativistic loss
                         output_real_discrim = discriminator(real_hr).detach()
-                        adv_G_loss = torch.log(1 - F.sigmoid(output_real_discrim.mean() - output.mean())) - \
-                            torch.log(F.sigmoid(output.mean() - output_real_discrim.mean()))
+                        adv_G_loss = torch.log(1 - torch.sigmoid(output_real_discrim.mean() - output.mean())) - \
+                            torch.log(torch.sigmoid(output.mean() - output_real_discrim.mean()))
 
                     G_loss += adv_G_loss                    
                     gen_adv_err = adv_G_loss.item()
