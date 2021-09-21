@@ -51,7 +51,7 @@ class Options():
         opt["epochs"]                  = 50
         opt["minibatch"]               = 1        # Minibatch for training
         opt["g_lr"]                    = 0.0001    # Learning rate for GAN generator
-        opt["d_lr"]                    = 0.0004    # Learning rate for GAN discriminator
+        opt["d_lr"]                    = 0.0001    # Learning rate for GAN discriminator
         opt["beta_1"]                  = 0.5
         opt["beta_2"]                  = 0.999
         opt["gamma"]                   = 0.1
