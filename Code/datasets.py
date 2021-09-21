@@ -277,7 +277,7 @@ if __name__ == '__main__':
                 print(f.keys())
                 f_data = torch.tensor(f['data'])
                 f_data -= f_data.min()
-                f_data /= (f.data.max() + 1e-6)
+                f_data /= (f_data.max() + 1e-6)
                 f['data'] = f_data.numpy()
                 f.close()
 
