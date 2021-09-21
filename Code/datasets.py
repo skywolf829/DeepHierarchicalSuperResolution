@@ -263,3 +263,25 @@ class TrainingDataset(torch.utils.data.Dataset):
                     data = torch.flip(data,[3])
 
         return data.clone()
+
+
+if __name__ == '__main__':
+    folders = ['Mixing2D', 'Vorts', 'Plume', 'Mixing3D', 'Isomag2D', 'Isomag3D']
+    subfolders = ['TrainingData', 'TestingData']
+
+    for folder in folders:
+        for subfolder in subfolders:
+            for f_name in os.listdir(os.path.join(data_folder, folder, subfolder)):
+                print(os.path.join(data_folder, folder, subfolder, f_name))
+                f = h5py.File(os.path.join(data_folder, folder, subfolder, f_name), 'w+')
+                f_data = torch.tensor(f['data'])
+                f_data -= f_data.min()
+                f_data /= (f.data.max() + 1e-6)
+                f['data'] = f_data.numpy()
+                f.close()
+
+                f = h5py.File(os.path.join(data_folder, folder, subfolder, f_name), 'w+')
+                f_data = torch.tensor(f['data'])
+                print("Min: %0.04f, max %0.04f, avg %0.04f" % (f_data.min(), f_data.max(), f_data.mean()))
+                f.close()
+            print("Finished " + os.path.join(data_folder, folder, subfolder))
