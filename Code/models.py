@@ -580,9 +580,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2),
 
             conv_layer(512, 512, kernel_size=opt['kernel_size'],
-                padding=0, stride=2),
-            batchnorm_layer(512),
-            nn.LeakyReLU(0.2)
+                padding=0, stride=2)
         )
 
     def forward(self, x):

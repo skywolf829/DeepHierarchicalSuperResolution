@@ -150,6 +150,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     generator.zero_grad()
                     D_loss = 0
                     
+                    print(real_hr.shape)
                     output_real = discriminator(
                         real_hr[:,1:2] if opt['model'] == "SSRTVD" else real_hr)
 
