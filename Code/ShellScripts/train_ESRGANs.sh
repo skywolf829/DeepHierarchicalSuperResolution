@@ -24,7 +24,7 @@ python3 -u Code/train.py --save_name Isomag2D_ESRGAN --train_distributed True \
 #--g_lr 0.0002 --alpha_1 1.0 --alpha_2 0.00 \
 #--model ESRGAN --generator_steps 1
 
-#python3 -u Code/train.py --save_name Mixing3D --train_distributed True --gpus_per_node 8 \
+#python3 -u Code/train.py --save_name Mixing3D_ESRGAN --train_distributed True --gpus_per_node 8 \
 #--num_workers 0 --data_folder Mixing3D --mode 3D --patch_size 96 --training_patch_size 96 \
 #--epochs 100 --cropping_resolution 96 --min_dimension_size 32 --g_lr 0.0002 \
 #--alpha_1 1.0 --alpha_2 0.00 \
@@ -36,11 +36,11 @@ python3 -u Code/train.py --save_name Isomag2D_ESRGAN --train_distributed True \
 #--alpha_1 1.0 --alpha_2 0.00 \
 #--model ESRGAN --generator_steps 1
 
-#python3 -u Code/train.py --save_name Vorts_ESRGAN --train_distributed True --gpus_per_node 8 \
-#--num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \
-#--epochs 100 --min_dimension_size 32 --cropping_resolution 96 --g_lr 0.0002 \
-#--alpha_1 1.0 --alpha_2 0.00 \
-#--model ESRGAN --generator_steps 1
+python3 -u Code/train.py --save_name Vorts_ESRGAN --train_distributed True --gpus_per_node 8 \
+--num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \
+--epochs 100 --min_dimension_size 32 --cropping_resolution 96 --g_lr 0.0002 \
+--alpha_1 1.0 --alpha_2 0.00 \
+--model ESRGAN --generator_steps 1
 
 #python3 -u Code/train.py --save_name Vorts_ESRGAN --train_distributed True --gpus_per_node 8 \
 #--num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \

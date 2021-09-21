@@ -125,7 +125,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
         )
     
     
-    loss = nn.L1Loss().to(opt["device"])
+    l1_loss = nn.L1Loss().to(opt["device"])
+    l2_loss = nn.MSELoss().to(opt['device'])
 
     for epoch in range(opt['epoch_number'], opt["epochs"]):
         
@@ -162,8 +163,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     if(opt['model'] == "ESRGAN"):
                         D_loss = -torch.log(torch.sigmoid(output_real.mean() - output_fake.mean())) - \
                             torch.log(1-torch.sigmoid(output_fake.mean() - output_real.mean()))
-                    else:
-                        D_loss = -output_real.mean() + output_fake.mean()
+                    elif(opt['model'] == "SSRTVD"):
+                        D_loss = ((output_real.mean() - 1)**2 + output_fake.mean()**2)/2
 
                     D_loss.backward(retain_graph=True)
                     discriminator_optimizer.step()
@@ -175,11 +176,11 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                         D_T_loss = 0
                         
                         output_real = discriminator_t(real_hr)
-                        D_T_loss -= output_real.mean()
 
                         fake = generator(real_lr.transpose(0,1)).transpose(0,1).detach()
                         output_fake = discriminator_t(fake)
-                        D_T_loss += output_fake.mean()
+
+                        D_T_loss = ((output_real.mean() - 1)**2 + output_fake.mean()**2)/2
                         
                         D_T_loss.backward(retain_graph=True)
                         discriminator_t_optimizer.step()
@@ -199,8 +200,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     fake = generator(real_lr)
                 
                 if(opt['alpha_1'] > 0.0):
-                    rec_loss = loss(fake[:,1:2] if opt['model'] == "SSRTVD" else fake, 
-                        real_hr[:,1:2] if opt['model'] == "SSRTVD" else real_hr) * opt["alpha_1"]
+                    rec_loss = l1_loss(fake) if opt['model'] == "ESRGAN" else \
+                        l2_loss(fake[:1:2]) * opt["alpha_1"]
                     G_loss += rec_loss
                     rec_loss = rec_loss.item()
 
@@ -250,7 +251,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                 
                 if(opt['alpha_1'] > 0):
                     writer.add_scalar('L1/%i'%len(generators), rec_loss, volumes_seen)
-                    
+
                 if(opt["alpha_2"] > 0.0 and (opt['model'] == "SSRTVD" or \
                     (opt['model'] == "ESRGAN" and epoch > opt['epochs']/2))):
                     writer.add_scalar('D_loss_scale/%i'%len(generators), D_loss.item(), volumes_seen)

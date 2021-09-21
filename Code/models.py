@@ -425,9 +425,7 @@ class SSRTVD_D_S(nn.Module):
             nn.LeakyReLU(0.2),
             spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(256, 512, 4, 2), epsilon=1e-4),
-            nn.LeakyReLU(0.2),
-            conv_layer(512, 1, 4, 2)
+            conv_layer(256, 512, 4, 2)
         )
 
     def forward(self,x):
