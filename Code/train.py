@@ -128,7 +128,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
     loss = nn.L1Loss().to(opt["device"])
 
     for epoch in range(opt['epoch_number'], opt["epochs"]):
-                
+        
         for batch_num, real_hr in enumerate(dataloader):
                         
             real_hr = real_hr.to(opt["device"])       
@@ -143,7 +143,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
             G_loss = 0        
             rec_loss = 0        
             
-            if(opt["alpha_2"] > 0.0):
+            if(opt["alpha_2"] > 0.0 and (opt['model'] == "SSRTVD" or \
+                (opt['model'] == "ESRGAN" and epoch > opt['epochs']/2))):
                 # Update spatial discrim
                 for _ in range(opt["discriminator_steps"]):
                     discriminator.zero_grad()
@@ -203,7 +204,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     G_loss += rec_loss
                     rec_loss = rec_loss.item()
 
-                if(opt["alpha_2"] > 0.0):            
+                if(opt["alpha_2"] > 0.0 and (opt['model'] == "SSRTVD" or \
+                    (opt['model'] == "ESRGAN" and epoch > opt['epochs']/2))):            
                     output = discriminator(fake[:,1:2] if opt['model'] == "SSRTVD" else fake)
                     
                     if opt['model'] == "SSRTVD":
