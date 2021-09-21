@@ -265,7 +265,7 @@ class TrainingDataset(torch.utils.data.Dataset):
         return data.clone()
 
 
-if __name__ == '__main__':
+def normalize_folders():
     folders = ['Mixing2D', 'Vorts', 'Plume', 'Mixing3D', 'Isomag2D', 'Isomag3D']
     subfolders = ['TrainingData', 'TestingData']
 
@@ -274,7 +274,6 @@ if __name__ == '__main__':
             for f_name in os.listdir(os.path.join(data_folder, folder, subfolder)):
                 print(os.path.join(folder, subfolder, f_name))
                 f = h5py.File(os.path.join(data_folder, folder, subfolder, f_name), 'r+')
-                print(f.keys())
                 f_data = torch.tensor(f['data'])
                 f_data -= f_data.min()
                 f_data /= (f_data.max() + 1e-6)
