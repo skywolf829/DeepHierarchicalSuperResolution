@@ -407,7 +407,7 @@ class SSRTVD_G_2x(nn.Module):
         x_concat = F.relu(self.deconv_IB1(x))
         x = torch.cat([x, x_concat], dim=1)
         x = F.tanh(self.deconv_IB2(x))
-        return x
+        return (x+1)/2
 
 class SSRTVD_D_S(nn.Module):
     def __init__ (self,opt):
@@ -424,8 +424,7 @@ class SSRTVD_D_S(nn.Module):
             spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4),
             nn.LeakyReLU(0.2),
             spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4),
-            nn.LeakyReLU(0.2),
-            conv_layer(256, 512, 4, 2)
+            conv_layer(256, 1, 1, 1)
         )
 
     def forward(self,x):
@@ -439,20 +438,36 @@ class SSRTVD_D_T(nn.Module):
         elif(opt['mode'] == "3D"):
             conv_layer = nn.Conv3d
 
-        self.model = nn.Sequential(
-            spectral_norm(conv_layer(3, 64, 4, 2), epsilon=1e-4),
-            nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4),
-            nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4),
-            nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(256, 512, 4, 2), epsilon=1e-4),
-            nn.LeakyReLU(0.2),
-            conv_layer(512, 1, 4, 2)
-        )
+
+        self.c1 = spectral_norm(conv_layer(3, 64, 4, 2), epsilon=1e-4)
+        self.c2 = spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4)
+        self.c3 = spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4)
+        self.c4 = conv_layer(256, 1, 1, 1)
+        
 
     def forward(self,x):
-        return self.model(x).mean()
+        x = self.c1(x)
+        x = F.leaky_relu(x, 0.2)
+        x = self.c2(x)
+        x = F.leaky_relu(x, 0.2)
+        x = self.c3(x)
+        x = F.leaky_relu(x, 0.2)
+        x = self.c4(x)
+        return x
+
+    
+    def feature_maps(self, x):
+        feat_maps = []
+        x = self.c1(x)
+        feat_maps.append(x.clone())
+        x = F.leaky_relu(x, 0.2)
+        x = self.c2(x)
+        feat_maps.append(x.clone())
+        x = F.leaky_relu(x, 0.2)
+        x = self.c3(x)
+        feat_maps.append(x.clone())
+
+        return feat_maps
 
 class Generator(nn.Module):
     def __init__ (self, resolution, opt):

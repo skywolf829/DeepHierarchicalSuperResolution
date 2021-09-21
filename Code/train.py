@@ -210,10 +210,26 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     output = discriminator(fake[:,1:2] if opt['model'] == "SSRTVD" else fake)
                     
                     if opt['model'] == "SSRTVD":
+                        
+                        # feature loss
+                        real_feat_maps = discriminator_t.feature_maps(real_hr)
+                        fake_feat_maps = discriminator_t.feature_maps(fake)
+                        feat_loss = 0
+                        for feat_map in range(len(real_feat_maps)):
+                            N_k = 1
+                            for dim in real_feat_maps[feat_map].shape:
+                                N_k *= dim
+                            feat_loss += l2_loss(real_feat_maps[feat_map], fake_feat_maps[feat_map]) / N_k
+
+
                         # temporal discrim loss
-                        d_t_loss = discriminator_t(fake)
+                        d_t_loss = (discriminator_t(fake).mean() - 1)**2
+
                         # spatial discrim loss
-                        adv_G_loss = (-output.mean().item()* opt['alpha_2']) - (d_t_loss.item()* 1e-3)
+                        d_s_loss = (discriminator(fake[:,1:2]).mean() - 1)**2
+
+                        adv_G_loss = (d_t_loss + d_s_loss) * opt['alpha_2']
+                        G_loss += feat_loss * 0.05 + (d_t_loss + d_s_loss) * opt['alpha_2']
                     else:
                         # spatial relativistic loss
                         output_real_discrim = discriminator(real_hr).detach()
@@ -258,7 +274,9 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     if(opt['model'] == "SSRTVD"):
                         writer.add_scalar('D_T_loss_scale/%i'%len(generators), d_t_loss.item(), volumes_seen)    
                     writer.add_scalar('G_loss_scale/%i'%len(generators), gen_adv_err, volumes_seen) 
-                
+
+                    
+
                 if(volumes_seen % opt['save_every'] == 0):
                     opt["iteration_number"] = batch_num
                     opt["epoch_number"] = epoch
