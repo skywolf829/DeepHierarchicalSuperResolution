@@ -250,6 +250,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                 
                 if(opt['alpha_1'] > 0):
                     writer.add_scalar('L1/%i'%len(generators), rec_loss, volumes_seen)
+                    
                 if(opt["alpha_2"] > 0.0 and (opt['model'] == "SSRTVD" or \
                     (opt['model'] == "ESRGAN" and epoch > opt['epochs']/2))):
                     writer.add_scalar('D_loss_scale/%i'%len(generators), D_loss.item(), volumes_seen)
