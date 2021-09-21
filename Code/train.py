@@ -200,8 +200,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                     fake = generator(real_lr)
                 
                 if(opt['alpha_1'] > 0.0):
-                    rec_loss = l1_loss(fake) if opt['model'] == "ESRGAN" else \
-                        l2_loss(fake[:1:2]) * opt["alpha_1"]
+                    rec_loss = l1_loss(fake, real_hr) if opt['model'] == "ESRGAN" else \
+                        l2_loss(fake[:1:2], real_hr) * opt["alpha_1"]
                     G_loss += rec_loss
                     rec_loss = rec_loss.item()
 
@@ -219,7 +219,8 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
                             N_k = 1
                             for dim in real_feat_maps[feat_map].shape:
                                 N_k *= dim
-                            feat_loss += l2_loss(real_feat_maps[feat_map], fake_feat_maps[feat_map]) / N_k
+                            feat_loss += l2_loss(real_feat_maps[feat_map], 
+                                fake_feat_maps[feat_map]) / N_k
 
 
                         # temporal discrim loss
