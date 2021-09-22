@@ -526,7 +526,8 @@ if __name__ == '__main__':
     volume = d.unsqueeze(0).to(args['device'])
 
     print("Loading octree from " + octree_path)
-    octree = torch.load(octree_path)
+    #octree = torch.load(octree_path)
+    octree = OctreeNodeList.load(octree_path, args['device'])
 
     upscale = UpscalingMethod(args['upscaling_method'], args['device'], 
         args['model_name'] if args['upscaling_method'] == "model" else None, 

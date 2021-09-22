@@ -9,10 +9,12 @@ import argparse
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import numpy as np
+import zipfile
 
 class OctreeNode:
-    def __init__(self, data : torch.Tensor, 
-    LOD : int, depth : int, index : int):
+    def __init__(self, data : torch.Tensor = None, 
+    LOD : int = None, depth : int = None, index : int = None):
         self.data : torch.Tensor = data 
         self.LOD : int = LOD
         self.depth : int = depth
@@ -34,7 +36,8 @@ class OctreeNode:
         return (self.data.element_size() * self.data.numel()) / 1024.0
 
 class OctreeNodeList:
-    def __init__(self):
+    def __init__(self, full_shape=None):
+        self.full_shape = full_shape
         self.node_list : List[OctreeNode] = []
         self.lock = threading.Lock()
 
@@ -137,6 +140,70 @@ class OctreeNodeList:
         for i in range(len(self.node_list)):
             max_lod = max(max_lod, self.node_list[i].LOD)
         return max_lod
+
+    def to(self, device):
+        for n in self.node_list:
+            n.data = n.data.to(device)
+
+    def save(self, location):
+
+        LODs = []
+        indices = []
+        depths = []
+        data = []
+        i = 0
+
+        for node in self.node_list:
+            LODs.append(node.LOD)
+            indices.append(node.index)
+            depths.append(node.depth)
+            data.extend(list(node.data.cpu().numpy().flatten()))
+            i += 1
+
+        LODs = np.array(LODs, dtype=int)
+        indices = np.array(indices, dtype=int)
+        depths = np.array(depths, dtype=int)
+        data = np.array(data, dtype=np.float32)
+        full_shape = np.array(self.full_shape, dtype=int)
+
+        np.savez_compressed(location, 
+            LODs=LODs, indices=indices, depths=depths,
+            data=data, full_shape=full_shape)
+
+    def load(location, device="cpu"):
+        octree = OctreeNodeList()
+
+        octree_data = np.load(location)
+
+        LODs = octree_data['LODs']
+        indices = octree_data['indices']
+        depths = octree_data['depths']
+        full_shape = octree_data['full_shape']
+        data = octree_data['data']
+    
+        octree.full_shape = full_shape.tolist()
+
+        start_pos = 0
+        for i in range(len(LODs)):
+            node = OctreeNode()
+            node.LOD = LODs[i]
+            node.index = indices[i]
+            node.depth = depths[i]
+
+            shape = full_shape.copy()[2:]
+            shape //= 2**(LODs[i] + depths[i])
+            node_floats_length = 1
+            for i in range(0, len(shape)):
+                node_floats_length *= shape[i]
+            
+            node.data = torch.tensor(
+                data[start_pos:start_pos+node_floats_length].reshape(shape), 
+                device=device).unsqueeze(0).unsqueeze(0)
+
+            octree.append(node)            
+            start_pos += node_floats_length
+        
+        return octree
 
 class ThreadsafeList(object):  
     def __init__(self, items=[]):
@@ -266,7 +333,7 @@ def volume_to_octree(volume, epsilon, min_chunk, max_downscaling_level,
     octree=None, parallel=False):
     if(octree is None):
         root = OctreeNode(volume.clone(), 0, 0, 0)
-        octree = OctreeNodeList()
+        octree = OctreeNodeList(full_shape=list(volume.shape))
         octree.append(root)
 
     queue = ThreadsafeList()
@@ -545,7 +612,7 @@ if __name__ == '__main__':
         print("Octreeifying the volume of size " + str(volume.shape) + \
             " with target reduction rate %0.02f" % args['target_reduction_rate'])
         root = OctreeNode(volume.clone(), 0, 0, 0)
-        octree = OctreeNodeList()
+        octree = OctreeNodeList(full_shape=list(volume.shape))
         octree.append(root)
         start_time = time.time()
         octree = coarsen_octree(volume, octree, args['min_chunk'], args['max_downscaling_level'],
@@ -569,5 +636,6 @@ if __name__ == '__main__':
         print("Voxels at downscaling level %i: %i (%0.02f percent)" % (lods[i], voxel_breakdown[lods[i]], 100*voxel_breakdown[lods[i]] / octree.num_voxels()))
         print("Nodes at downscaling level %i: %i (%0.02f percent)" % (lods[i], node_breakdown[lods[i]], 100*node_breakdown[lods[i]] / len(octree)))
 
-    torch.save(octree.node_list, os.path.join(save_folder, args['save_name']))
+    octree.save(os.path.join(save_folder, args['save_name']))
+    #torch.save(octree.node_list, os.path.join(save_folder, args['save_name']))
     print("The octree data was saved to " + os.path.join(save_folder, args['save_name']))
