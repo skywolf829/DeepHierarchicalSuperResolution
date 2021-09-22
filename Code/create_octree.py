@@ -254,7 +254,7 @@ def check_next_node(octree, queue, max_downscaling_level, min_chunk, epsilon):
             node.data = node_downscaled
             res2 = True
             queue.append(node)
-        elif(int(node.min_width/2) >= min_chunk):
+        elif(int(node.min_width()/2) >= min_chunk):
             node_split = split_node(node)
             octree.extend(node_split)
             queue.extend(node_split)
@@ -539,7 +539,7 @@ if __name__ == '__main__':
         end_time = time.time()
         print("Joining redundant octree nodes took %0.02f seconds" % (end_time - start_time))
 
-        print("The octree with epsilon=%0.02f, max_downscaling_level=%i, and min_chunk=%i has %i octree leaf nodes" % \
+        print("The octree with epsilon=%0.04f, max_downscaling_level=%i, and min_chunk=%i has %i octree leaf nodes" % \
             (args['epsilon'], args['max_downscaling_level'], args['min_chunk'], len(octree)))
     else:
         print("Octreeifying the volume of size " + str(volume.shape) + \
@@ -557,8 +557,9 @@ if __name__ == '__main__':
     total_voxels = 1
     for i in range(2, len(volume.shape)):
         total_voxels *= volume.shape[i]
-    print("The octree has %i voxels, which is %0.02f percent of the original data" % \
-        (octree.num_voxels(), 100* octree.num_voxels() / total_voxels))
+    print("The octree has %i voxels, which is %0.02f percent of the original data, reduction rate=%0.02f" % \
+            (octree.num_voxels(), 100* octree.num_voxels() / total_voxels, 
+                total_voxels / octree.num_voxels()))
     
     voxel_breakdown, node_breakdown = voxels_at_each_LOD(octree)
 
