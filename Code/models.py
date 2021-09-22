@@ -389,14 +389,14 @@ class SSRTVD_G_2x(nn.Module):
     def __init__ (self,resolution,opt):
         super(SSRTVD_G_2x, self).__init__()
         self.resolution = resolution
-        self.IB1 = IB(1, 16)
-        self.IB2 = IB(16, 64)
-        self.IB3 = IB(64+16, 128)
+        self.IB1 = IB(opt, 1, 16)
+        self.IB2 = IB(opt, 16, 64)
+        self.IB3 = IB(opt, 64+16, 128)
 
        
         self.deconv = nn.ConvTranspose3d(128, 32, 4, 1) if opt['mode'] == "3D" else nn.ConvTranspose2d(128, 128, 4, 1)
-        self.deconv_IB1 = IB(32, 8)
-        self.deconv_IB2 = IB(8+32, 1)
+        self.deconv_IB1 = IB(opt, 32, 8)
+        self.deconv_IB2 = IB(opt, 8+32, 1)
 
     def forward(self,x):
         x = F.relu(self.IB1(x))
