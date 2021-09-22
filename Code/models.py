@@ -336,11 +336,11 @@ class IB(nn.Module):
 
         self.path1 = nn.Sequential(
             spectral_norm(self.c1, eps=1e-4),            
-            nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
+            nn.InstanceNorm3d(out_c) if opt['mode'] == "3D" else nn.InstanceNorm2d(out_c),
             spectral_norm(self.c2, eps=1e-4),            
-            nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
+            nn.InstanceNorm3d(out_c) if opt['mode'] == "3D" else nn.InstanceNorm2d(out_c),
             spectral_norm(self.c3, eps=1e-4),
-            nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
+            nn.InstanceNorm3d(out_c) if opt['mode'] == "3D" else nn.InstanceNorm2d(out_c),
             spectral_norm(self.c4, eps=1e-4)     
         )
 
