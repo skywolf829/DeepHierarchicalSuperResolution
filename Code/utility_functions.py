@@ -16,10 +16,12 @@ def reset_grads(model,require_grad):
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv2d') != -1:
-        m.weight.data.normal_(0.0, 0.02)
+        if(m.weight.data is not None):
+            m.weight.data.normal_(0.0, 0.02)
     elif classname.find('Norm') != -1:
-        m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.fill_(0)
+        if(m.weight.data is not None):
+            m.weight.data.normal_(1.0, 0.02)
+            m.bias.data.fill_(0)
  
 def save_obj(obj,location):
     with open(location, 'wb') as f:
