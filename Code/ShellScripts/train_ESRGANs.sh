@@ -36,11 +36,11 @@ python3 -u Code/train.py --save_name Plume_ESRGAN --train_distributed True --gpu
 --alpha_1 1.0 --alpha_2 0.00 \
 --model ESRGAN --generator_steps 1
 
-#python3 -u Code/train.py --save_name Vorts_ESRGAN --train_distributed True --gpus_per_node 8 \
-#--num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \
-#--epochs 100 --min_dimension_size 32 --cropping_resolution 96 --g_lr 0.0002 \
-#--alpha_1 1.0 --alpha_2 0.00 \
-#--model ESRGAN --generator_steps 1
+python3 -u Code/train.py --save_name Vorts_ESRGAN --train_distributed True --gpus_per_node 8 \
+--num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \
+--epochs 100 --min_dimension_size 32 --cropping_resolution 96 --g_lr 0.0002 \
+--alpha_1 1.0 --alpha_2 0.00 \
+--model ESRGAN --generator_steps 1
 
 python3 -u Code/train.py --save_name Vorts_ESRGAN --train_distributed True --gpus_per_node 8 \
 --num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \

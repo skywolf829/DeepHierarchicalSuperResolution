@@ -49,35 +49,22 @@ if __name__ == '__main__':
 
     for scale_factor in results.keys():
         print(scale_factor)
-        model_results = results[scale_factor]["model"]
-        model_noGAN_results = results[scale_factor]["model_noGAN"]
+
         interp_results = results[scale_factor][interp]
 
 
-        for metric in model_results.keys():
+        for metric in interp_results.keys():
             fig = plt.figure()
             y_label = metric
 
-            # model results plotting
-            x = np.arange(args['start_ts'], 
-                args['start_ts'] + args['ts_skip']*len(model_results[metric]),
-                args['ts_skip'])
-            y = model_results[metric]
-            plt.plot(x, y, label="GAN")
+            for SR_type in results[scale_factor].keys():
 
-            # model_noGAN results plotting
-            x = np.arange(args['start_ts'], 
-                args['start_ts'] + args['ts_skip']*len(model_noGAN_results[metric]),
-                args['ts_skip'])
-            y = model_noGAN_results[metric]
-            plt.plot(x, y, label="CNN")
-
-            # interpolation results plotting
-            x = np.arange(args['start_ts'], 
-                args['start_ts'] + args['ts_skip']*len(interp_results[metric]),
-                args['ts_skip'])
-            y = interp_results[metric]
-            plt.plot(x, y, label=interp)
+                # model results plotting
+                x = np.arange(args['start_ts'], 
+                    args['start_ts'] + args['ts_skip']*len(results[scale_factor][SR_type][metric]),
+                    args['ts_skip'])
+                y = results[scale_factor][SR_type][metric]
+                plt.plot(x, y, label=SR_type)
 
             plt.legend()
             plt.xlabel("Timestep")
@@ -90,48 +77,34 @@ if __name__ == '__main__':
     # Overall graphs
 
     averaged_results = {}
-    averaged_results['model'] = {}
-    averaged_results['model_noGAN'] = {}
-    averaged_results[interp] = {}
 
     scale_factors = []
 
     for scale_factor in results.keys():
-        model_results = results[scale_factor]["model"]
-        model_noGAN_results = results[scale_factor]["model_noGAN"]
-        interp_results = results[scale_factor][interp]
 
         scale_factor_int = int(scale_factor.split('x')[0])
         scale_factors.append(scale_factor_int)
 
-        for metric in model_results.keys():
-            if(metric not in averaged_results['model'].keys()):
-                averaged_results['model'][metric] = []
-                averaged_results['model_noGAN'][metric] = []
-                averaged_results[interp][metric] = []
-            averaged_results['model'][metric].append(np.median(np.array(model_results[metric])))
-            averaged_results['model_noGAN'][metric].append(np.median(np.array(model_noGAN_results[metric])))
-            averaged_results[interp][metric].append(np.median(np.array(interp_results[metric])))
+        for metric in results[scale_factor][interp].keys():
+            for SR_type in results[scale_factor].keys():
+                if SR_type not in averaged_results.keys():
+                    averaged_results[SR_type] = {}
+
+                if(metric not in averaged_results[SR_type].keys()):
+                    averaged_results[SR_type][metric] = []
+
+                averaged_results[SR_type][metric].append(np.median(
+                    np.array(results[scale_factor][SR_type][metric])))
 
     
-    for metric in model_results.keys():
+    for metric in averaged_results[interp].keys():
         fig = plt.figure()
         y_label = metric
-
-        # model results plotting
-        x = scale_factors
-        y = averaged_results['model'][metric]
-        plt.plot(x, y, label="GAN")
-
-        # model_noGAN results plotting
-        x = scale_factors
-        y = averaged_results['model_noGAN'][metric]
-        plt.plot(x, y, label="CNN")
-
-        # interpolation results plotting
-        x = scale_factors
-        y = averaged_results[interp][metric]
-        plt.plot(x, y, label=interp)
+        for SR_type in averaged_results.keys():
+            # model results plotting
+            x = scale_factors
+            y = averaged_results[SR_type][metric]
+            plt.plot(x, y, label=SR_type)
 
         plt.legend()
         plt.xlabel("Scale factor")
@@ -149,26 +122,13 @@ if __name__ == '__main__':
     left_y_label = "PSNR (dB)"
     right_y_label = "SSIM"
 
-    # model results plotting
-    x = scale_factors
-    left_y = averaged_results['model'][left_y_label]
-    right_y = averaged_results['model'][right_y_label]
-    ax1.plot(x, left_y, label='GAN', marker='s')
-    ax2.plot(x, right_y, label='GAN', linestyle='dashed', marker='^')
-
-    # model noGAN
-    x = scale_factors
-    left_y = averaged_results['model_noGAN'][left_y_label]
-    right_y = averaged_results['model_noGAN'][right_y_label]
-    ax1.plot(x, left_y, label='CNN', marker='s')
-    ax2.plot(x, right_y, label='CNN', linestyle='dashed', marker='^')
-
-    # interpolation results plotting
-    x = scale_factors
-    left_y = averaged_results[interp][left_y_label]
-    right_y = averaged_results[interp][right_y_label]
-    ax1.plot(x, left_y, label=interp, marker='s')
-    ax2.plot(x, right_y, label=interp, linestyle='dashed', marker='^')
+    for SR_type in averaged_results.keys():
+        # model results plotting
+        x = scale_factors
+        left_y = averaged_results[SR_type][left_y_label]
+        right_y = averaged_results[SR_type][right_y_label]
+        ax1.plot(x, left_y, label=SR_type, marker="s")
+        ax2.plot(x, right_y, label=SR_type, marker="^", linestyle='dashed')
 
     ax1.legend()
     #ax2.legend()
