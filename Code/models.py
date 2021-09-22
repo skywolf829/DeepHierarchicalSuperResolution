@@ -321,7 +321,7 @@ class RRDB(nn.Module):
         return out
 
 class IB(nn.Module):
-    def __init__ (self,in_c,out_c,opt):
+    def __init__ (self,opt, in_c, out_c):
         super(IB, self).__init__()
         if(opt['mode'] == "2D"):
             conv_layer = nn.Conv2d
