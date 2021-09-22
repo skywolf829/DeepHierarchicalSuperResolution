@@ -335,17 +335,17 @@ class IB(nn.Module):
         self.c5 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
 
         self.path1 = nn.Sequential(
-            spectral_norm(self.c1, epsilon=1e-4),            
+            spectral_norm(self.c1, eps=1e-4),            
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
-            spectral_norm(self.c2, epsilon=1e-4),            
+            spectral_norm(self.c2, eps=1e-4),            
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
-            spectral_norm(self.c3, epsilon=1e-4),
+            spectral_norm(self.c3, eps=1e-4),
             nn.InstanceNorm3d() if opt['mode'] == "3D" else nn.InstanceNorm2d(),
-            spectral_norm(self.c4, epsilon=1e-4)     
+            spectral_norm(self.c4, eps=1e-4)     
         )
 
         self.path2 = nn.Sequential(
-            spectral_norm(self.c5, epsilon=1e-4)
+            spectral_norm(self.c5, eps=1e-4)
         )
 
     def forward(self,x):
@@ -419,11 +419,11 @@ class SSRTVD_D_S(nn.Module):
 
         # Input must be at least 96^(num_dims)
         self.model = nn.Sequential(
-            spectral_norm(conv_layer(1, 64, 4, 2), epsilon=1e-4),
+            spectral_norm(conv_layer(1, 64, 4, 2), eps=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4),
+            spectral_norm(conv_layer(64, 128, 4, 2), eps=1e-4),
             nn.LeakyReLU(0.2),
-            spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4),
+            spectral_norm(conv_layer(128, 256, 4, 2), eps=1e-4),
             conv_layer(256, 1, 1, 1)
         )
 
@@ -439,9 +439,9 @@ class SSRTVD_D_T(nn.Module):
             conv_layer = nn.Conv3d
 
 
-        self.c1 = spectral_norm(conv_layer(3, 64, 4, 2), epsilon=1e-4)
-        self.c2 = spectral_norm(conv_layer(64, 128, 4, 2), epsilon=1e-4)
-        self.c3 = spectral_norm(conv_layer(128, 256, 4, 2), epsilon=1e-4)
+        self.c1 = spectral_norm(conv_layer(3, 64, 4, 2), eps=1e-4)
+        self.c2 = spectral_norm(conv_layer(64, 128, 4, 2), eps=1e-4)
+        self.c3 = spectral_norm(conv_layer(128, 256, 4, 2), eps=1e-4)
         self.c4 = conv_layer(256, 1, 1, 1)
         
 
