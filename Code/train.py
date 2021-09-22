@@ -64,12 +64,12 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
         generator = combined_models.module[0]
         discriminator = combined_models.module[1]
         if(opt['model'] == "SSRTVD"):
-            discriminator_t = combined_models[2]
+            discriminator_t = combined_models.module[2]
     else:
         generator = combined_models[0]
         discriminator = combined_models[1]
         if(opt['model'] == "SSRTVD"):
-            discriminator_t = combined_models[2]
+            discriminator_t = combined_models.module[2]
         
     print_to_log_and_console("Training on %s" % (opt["device"]), 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
