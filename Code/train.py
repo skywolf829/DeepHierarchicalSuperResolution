@@ -25,9 +25,8 @@ output_folder = os.path.join(project_folder_path, "Output")
 save_folder = os.path.join(project_folder_path, "SavedModels")
 
 
-def train_single_scale(rank, generators, discriminators, opt, dataset, discriminators_t=None):
+def train_single_scale(rank, generators, discriminators, opt, dataset, discriminators_t):
     print("Training on device " + str(rank))
-    print(discriminators_t)
     if(opt['train_distributed']):        
         print("Initializing process group.")
         opt['device'] = "cuda:" + str(rank)
@@ -426,13 +425,12 @@ if __name__ == '__main__':
             os.environ['MASTER_PORT'] = '29500' 
             if(opt['model'] == "ESRGAN"):
                 mp.spawn(train_single_scale,
-                    args=(generators, discriminators, opt, dataset),
+                    args=(generators, discriminators, opt, dataset, None),
                     nprocs=opt['gpus_per_node'],
                     join=True)
             elif opt['model'] == "SSRTVD":
                 mp.spawn(train_single_scale,
-                    args=(generators, discriminators, opt, dataset, 
-                        discriminators_t),
+                    args=(generators, discriminators, opt, dataset, discriminators_t),
                     nprocs=opt['gpus_per_node'],
                     join=True)
         else:
