@@ -221,7 +221,7 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                                 N_k *= dim
                             feat_loss += l2_loss(real_feat_maps[feat_map], 
                                 fake_feat_maps[feat_map]) / N_k
-
+                        G_loss += feat_loss * 0.05
 
                         # temporal discrim loss
                         d_t_loss = (discriminator_t(fake).mean() - 1)**2
@@ -230,7 +230,7 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                         d_s_loss = (discriminator(fake[:,1:2]).mean() - 1)**2
 
                         adv_G_loss = (d_t_loss + d_s_loss) * opt['alpha_2']
-                        G_loss += feat_loss * 0.05 + (d_t_loss + d_s_loss) * opt['alpha_2']
+                        #G_loss += feat_loss * 0.05 + (d_t_loss + d_s_loss) * opt['alpha_2']
                     else:
                         # spatial relativistic loss
                         output_real_discrim = discriminator(real_hr).detach()
@@ -262,7 +262,7 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                 num_total = opt['epochs']*len(dataset)
                 if(opt['train_distributed']):
                     num_total = int(num_total / (opt['num_nodes'] * opt['gpus_per_node']))
-                print_to_log_and_console("%i/%i: Dloss=%.02f Gloss=%.02f L1=%.04f" %
+                print_to_log_and_console("%i/%i: Dloss=%.04f Gloss=%.04f L1=%.04f" %
                     (volumes_seen, num_total, D_loss, G_loss, rec_loss), 
                 os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
                 
