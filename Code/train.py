@@ -301,6 +301,10 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
     generator.eval()
     discriminator = reset_grads(discriminator, False)
     discriminator.eval()
+    if opt['model'] == "SSRTVD":
+        discriminator_t = reset_grads(discriminator_t, False)
+        discriminator_t.eval()
+
     if(not opt['train_distributed'] or rank == 0):
         save_models(generators + [generator], 
             discriminators + [discriminator], opt,
@@ -425,9 +429,13 @@ if __name__ == '__main__':
                 nprocs=opt['gpus_per_node'],
                 join=True)
         else:
-            generator, discriminator = train_single_scale(opt['device'], generators, 
-                discriminators, opt, dataset,
-                discriminators_t if opt['model'] == "SSRTVD" else None)
+            if(opt['model'] == "ESRGAN"):
+                generator, discriminator = train_single_scale(opt['device'], generators, 
+                    discriminators, opt, dataset, None)
+            else:
+                generator, discriminator, discriminator_t = train_single_scale(opt['device'], generators, 
+                    discriminators, opt, dataset,
+                    discriminators_t)
 
         if(opt['model'] == "ESRGAN"):
             generators, discriminators = load_models(opt,opt["device"])
