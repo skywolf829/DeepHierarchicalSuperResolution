@@ -2,6 +2,8 @@ import os
 import torch
 import h5py
 from utility_functions import AvgPool3D, AvgPool2D
+import numpy as np
+
 
 project_folder_path = os.path.dirname(os.path.abspath(__file__))
 project_folder_path = os.path.join(project_folder_path, "..")
@@ -15,15 +17,18 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
         
         self.opt = opt
         self.items = []
-        self.item_names = []
         self.subsample_dist = 1
 
         folder_to_load = os.path.join(data_folder, self.opt['data_folder'], "TrainingData")
 
         print("Initializing dataset - reading %i items" % len(os.listdir(folder_to_load)))
-        for filename in os.listdir(folder_to_load):
-            self.item_names.append(filename)            
-            
+        filenames = os.listdir(folder_to_load)
+        for filename in os.listdir(folder_to_load):   
+            filenames.append(int(filename.split(".")[0]))
+        
+        sorted_order = np.argsort(np.array(filename))
+        for i in range(len(sorted_order)):
+            filename = os.listdir(folder_to_load)[sorted_order[i]]
             print("Loading " + filename)   
             f = h5py.File(os.path.join(folder_to_load, filename), 'r')
             d = torch.tensor(f.get('data'))
@@ -33,7 +38,7 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
         print("Resolution: " + str(self.resolution))
 
     def __len__(self):
-        return len(self.items)-3
+        return len(self.items)-2
 
     def resolution(self):
         return self.resolution
