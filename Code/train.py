@@ -25,7 +25,7 @@ output_folder = os.path.join(project_folder_path, "Output")
 save_folder = os.path.join(project_folder_path, "SavedModels")
 
 
-def train_single_scale(rank, generators, discriminators, opt, dataset, discriminators_t):
+def train_single_scale(rank, generators, discriminators, discriminators_t, opt, dataset):
     print("Training on device " + str(rank))
     if(opt['train_distributed']):        
         print("Initializing process group.")
@@ -414,7 +414,9 @@ if __name__ == '__main__':
     # Train each scale 1 by 1
     i = opt['scale_in_training']
     while i < opt["n"]:
-
+        print(generators)
+        print(discriminators)
+        pring(discriminators_t)
         start_time_scale_n = time.time()
 
         print_to_log_and_console(str(datetime.datetime.now()) + " - Beginning training on scale " + str(i),
@@ -425,22 +427,21 @@ if __name__ == '__main__':
             os.environ['MASTER_PORT'] = '29500' 
             if(opt['model'] == "ESRGAN"):
                 mp.spawn(train_single_scale,
-                    args=(generators, discriminators, opt, dataset, None),
+                    args=(generators, discriminators, None, opt, dataset),
                     nprocs=opt['gpus_per_node'],
                     join=True)
             elif opt['model'] == "SSRTVD":
                 mp.spawn(train_single_scale,
-                    args=(generators, discriminators, opt, dataset, discriminators_t),
+                    args=(generators, discriminators, discriminators_t, opt, dataset),
                     nprocs=opt['gpus_per_node'],
                     join=True)
         else:
             if(opt['model'] == "ESRGAN"):
                 generator, discriminator = train_single_scale(opt['device'], generators, 
-                    discriminators, opt, dataset, None)
+                    discriminators, None, opt, dataset)
             else:
                 generator, discriminator, discriminator_t = train_single_scale(opt['device'], generators, 
-                    discriminators, opt, dataset,
-                    discriminators_t)
+                    discriminators, discriminators_t, opt, dataset)
 
         if(opt['model'] == "ESRGAN"):
             generators, discriminators = load_models(opt,opt["device"])
