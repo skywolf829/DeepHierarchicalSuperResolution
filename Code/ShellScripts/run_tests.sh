@@ -31,20 +31,20 @@
 #--device cuda:0 --parallel True --test_on_gpu True \
 #--output_file_name Mixing3D.results --dict_entry_name SSRTVD
 
-#python3 -u Code/TestingScripts/test_SSR.py \
-#--mode 3D --data_folder Plume --model_name Plume_ESRGAN \
-#--device cuda:0 --parallel False --test_on_gpu True \
-#--output_file_name Plume.results --dict_entry_name ESRGAN
+python3 -u Code/TestingScripts/test_SSR.py \
+--mode 3D --data_folder Plume --model_name Plume_ESRGAN \
+--device cuda:0 --parallel False --test_on_gpu True \
+--output_file_name Plume.results --dict_entry_name ESRGAN
 
 #python3 -u Code/TestingScripts/test_SSR.py \
 #--mode 3D --data_folder Plume --model_name Plume_SSRTVD \
 #--device cuda:0 --parallel False --test_on_gpu True \
 #--output_file_name Plume.results --dict_entry_name SSRTVD
 
-python3 -u Code/TestingScripts/test_SSR.py \
---mode 3D --data_folder Vorts --model_name Vorts_ESRGAN \
---device cuda:0 --parallel False --test_on_gpu True \
---output_file_name Vorts.results --dict_entry_name ESRGAN
+#python3 -u Code/TestingScripts/test_SSR.py \
+#--mode 3D --data_folder Vorts --model_name Vorts_ESRGAN \
+#--device cuda:0 --parallel False --test_on_gpu True \
+#--output_file_name Vorts.results --dict_entry_name ESRGAN
 
 #python3 -u Code/TestingScripts/test_SSR.py \
 #--mode 3D --data_folder Vorts --model_name Vorts_SSRTVD \
