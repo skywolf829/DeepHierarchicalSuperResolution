@@ -34,7 +34,7 @@ def train_single_scale(rank, generators, discriminators, opt, dataset, discrimin
         dist.init_process_group(                                   
             backend='nccl',                                         
             init_method='env://',                                   
-            world_size=opt['num_nodes'] * opt['gpus_per_node'],                              
+            world_size=opt['gpus_per_node'],                              
             rank=rank                                               
         )  
     start_t = time.time()
@@ -424,11 +424,17 @@ if __name__ == '__main__':
         if(opt['train_distributed']):
             os.environ['MASTER_ADDR'] = '127.0.0.1'              
             os.environ['MASTER_PORT'] = '29500' 
-            mp.spawn(train_single_scale,
-                args=(generators, discriminators, opt, dataset, 
-                    discriminators_t if opt['model'] == "SSRTVD" else None),
-                nprocs=opt['gpus_per_node'],
-                join=True)
+            if(opt['model'] == "ESRGAN"):
+                mp.spawn(train_single_scale,
+                    args=(generators, discriminators, opt, dataset),
+                    nprocs=opt['gpus_per_node'],
+                    join=True)
+            elif opt['model'] == "SSRTVD":
+                mp.spawn(train_single_scale,
+                    args=(generators, discriminators, opt, dataset, 
+                        discriminators_t),
+                    nprocs=opt['gpus_per_node'],
+                    join=True)
         else:
             if(opt['model'] == "ESRGAN"):
                 generator, discriminator = train_single_scale(opt['device'], generators, 
