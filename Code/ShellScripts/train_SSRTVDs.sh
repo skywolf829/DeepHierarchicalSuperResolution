@@ -1,14 +1,14 @@
 #!/bin/sh
 cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 
-python3 -u Code/train.py --save_name Isomag2D_SSRTVD --train_distributed False \
---beta_1 0.5 --beta_2 0.999 \
---num_workers 0 --data_folder Isomag2D --mode 2D \
---cropping_resolution 256 --patch_size 1024 --training_patch_size 1024 \
---epochs 50 --random_flipping true \
---min_dimension_size 32 --g_lr 0.0001 \
---alpha_1 1.0 --alpha_2 0.001 --d_lr 0.0004 \
---model SSRTVD --generator_steps 1 --discriminator_steps 2
+#python3 -u Code/train.py --save_name Isomag2D_SSRTVD --train_distributed False \
+#--beta_1 0.5 --beta_2 0.999 \
+#--num_workers 0 --data_folder Isomag2D --mode 2D \
+#--cropping_resolution 256 --patch_size 1024 --training_patch_size 1024 \
+#--epochs 50 --random_flipping true \
+#--min_dimension_size 32 --g_lr 0.0001 \
+#--alpha_1 1.0 --alpha_2 0.001 --d_lr 0.0004 \
+#--model SSRTVD --generator_steps 1 --discriminator_steps 2
 
 #python3 -u Code/train.py --save_name Isomag3D_SSRTVD --train_distributed True \
 #--beta_1 0.5 --beta_2 0.999 \
