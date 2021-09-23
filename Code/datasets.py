@@ -33,7 +33,7 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
         print("Resolution: " + str(self.resolution))
 
     def __len__(self):
-        return len(self.items)-2
+        return len(self.items)-3
 
     def resolution(self):
         return self.resolution
@@ -74,7 +74,7 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
         self.subsample_dist = dist
         
     def __getitem__(self, index):
-        data = self.items[index-1:index+2]
+        data = self.items[index:index+3]
         data = torch.cat(data, dim=0).clone()
 
         x_start = 0
