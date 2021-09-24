@@ -10,7 +10,6 @@ import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
-import zipfile
 
 class OctreeNode:
     def __init__(self, data : torch.Tensor = None, 
