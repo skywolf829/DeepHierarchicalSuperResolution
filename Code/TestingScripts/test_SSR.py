@@ -259,7 +259,10 @@ if __name__ == '__main__':
     opt["device"] = args["device"]
     opt['data_folder'] = args['data_folder']
 
-    generators, _ = load_models(opt,"cpu")
+    if(opt['model'] == "ESRGAN"):
+        generators, _ = load_models(opt,"cpu")
+    elif(opt['model'] == "SSRTVD"):
+        generators, _, _ = load_models(opt,"cpu")
     for i in range(len(generators)):
         generators[i] = generators[i].to(opt['device'])
         generators[i].train(False)
