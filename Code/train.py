@@ -200,7 +200,8 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                     fake = generator(real_lr)
                 
                 if(opt['alpha_1'] > 0.0):
-                    rec_loss = l1_loss(fake, real_hr) if opt['model'] == "ESRGAN" else \
+                    rec_loss = l1_loss(fake, real_hr) * opt["alpha_1"] if \
+                        opt['model'] == "ESRGAN" else \
                         l2_loss(fake[:1:2], real_hr) * opt["alpha_1"]
                     G_loss += rec_loss
                     rec_loss = rec_loss.item()
