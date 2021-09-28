@@ -560,7 +560,7 @@ if __name__ == '__main__':
         s = ssim3D(MRSR_volume, volume).item()
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
-    rootgrp = Dataset(os.path.join(save_folder, args['save_name']), "w", format="NETCDF4")
+    rootgrp = Dataset(os.path.join(save_folder, args['save_name']+".nc"), "w", format="NETCDF4")
     rootgrp.createDimension("u")
     rootgrp.createDimension("v")
     if(len(MRSR_volume.shape) == 5):
