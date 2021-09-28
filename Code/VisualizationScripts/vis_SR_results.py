@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     font = {#'font.family' : 'normal',
         #'font.weight' : 'bold',
-        'font.size'   : 13}
+        'font.size'   : 12}
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
