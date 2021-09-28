@@ -172,7 +172,7 @@ class OctreeNodeList:
     def load(location, device="cpu"):
         octree = OctreeNodeList()
 
-        octree_data = np.load(location)
+        octree_data = np.load(location + ".npz")
 
         LODs = octree_data['LODs']
         indices = octree_data['indices']
