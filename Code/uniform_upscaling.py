@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.jit
-from utility_functions import str2bool, PSNR_torch, ssim, ssim3D, ssim3D_distributed
+from utility_functions import str2bool, PSNR_torch, ssim, ssim3D, ssim3D_distributed, AvgPool2D, AvgPool3D
 import time
 import h5py
 import argparse
@@ -58,13 +58,19 @@ if __name__ == '__main__':
     f.close()
     volume = d.unsqueeze(0).to(args['device'])
 
+    v_lr = volume.clone()
+    if(len(volume.shape) == 4):
+        v_lr = AvgPool2D(v_lr, args['scale_factor'])
+    elif(len(volume.shape) == 5):
+        v_lr = AvgPool3D(v_lr, args['scale_factor'])
+
     upscale = UpscalingMethod(args['upscaling_method'], args['device'], 
         args['model_name'] if args['upscaling_method'] == "model" else None, 
         args['distributed'] if args['upscaling_method'] == 'model' else None)
     
     print("Upscaling volume")
     start_time = time.time()
-    SR_volume = upscale_volume(volume, volume.shape, upscale)
+    SR_volume = upscale_volume(v_lr, args['scale_factor'], upscale)
     end_time = time.time()
     print("It took %0.02f seconds to upscale the volume with %s" % \
         (end_time - start_time, args['upscaling_method']))
