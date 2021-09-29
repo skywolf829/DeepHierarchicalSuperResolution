@@ -123,7 +123,6 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
             num_workers=opt["num_workers"],
             pin_memory=True
         )
-    dataloader.set
     
     l1_loss = nn.L1Loss().to(opt["device"])
     l2_loss = nn.MSELoss().to(opt['device'])
