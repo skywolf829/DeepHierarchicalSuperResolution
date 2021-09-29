@@ -123,13 +123,14 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
             num_workers=opt["num_workers"],
             pin_memory=True
         )
-    
+    dataloader.set
     
     l1_loss = nn.L1Loss().to(opt["device"])
     l2_loss = nn.MSELoss().to(opt['device'])
 
     for epoch in range(opt['epoch_number'], opt["epochs"]):
-        
+        if opt['train_distributed']:
+            train_sampler.set_epoch(epoch) 
         for batch_num, real_hr in enumerate(dataloader):
                         
             real_hr = real_hr.to(opt["device"])       
