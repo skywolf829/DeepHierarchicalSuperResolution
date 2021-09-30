@@ -1,24 +1,16 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.jit
-from utility_functions import str2bool, PSNR_torch, ssim, ssim3D, ssim3D_distributed, AvgPool2D, AvgPool3D
+from utility_functions import str2bool, PSNR_torch, ssim, ssim3D, \
+    ssim3D_distributed, AvgPool2D, AvgPool3D
 import time
 import h5py
 import argparse
 import os
-from create_octree import OctreeNodeList, OctreeNode, downscale
 from netCDF4 import Dataset
 import numpy as np
-from typing import List, Tuple, Optional
-from options import load_options
-from models import load_models
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import copy
-import threading
-import imageio
-from octree_upscaling import UpscalingMethod, SharedList, generate_patch, generate_by_patch_parallel
+from octree_upscaling import UpscalingMethod
 from math import log2
+import matplotlib.pyplot as plt
 
 
 def upscale_volume(volume, factor, upscale):
@@ -82,6 +74,13 @@ if __name__ == '__main__':
         s = ssim3D_distributed(SR_volume, volume).item()
     else:
         s = ssim3D(SR_volume, volume).item()
+
+    errs = torch.abs(SR_volume - volume).flatten().cpu().numpy()
+    plt.hist(errs, bins=50, range=(0.0, 1.0))
+    plt.title("L1 error histogram")
+    plt.xlabel("Error")
+    plt.ylabel("Occurances")
+    plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
     rootgrp = Dataset(os.path.join(save_folder, args['save_name']+".nc"), "w", format="NETCDF4")
