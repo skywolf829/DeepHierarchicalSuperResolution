@@ -564,7 +564,7 @@ if __name__ == '__main__':
     plt.hist(errs, bins=100, range=(0.0, errs.mean()+errs.std()*2))
     plt.title("L1 error histogram")
     plt.xlabel("Error")
-    plt.ylabel("Occurances")
+    plt.ylabel("Occurance (proportion)")
     ys, _ = plt.yticks()
     ys = np.array(ys, dtype=float)
     plt.yticks(ys, np.around(ys / len(errs), 4))
