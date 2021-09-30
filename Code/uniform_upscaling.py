@@ -76,10 +76,14 @@ if __name__ == '__main__':
         s = ssim3D(SR_volume, volume).item()
 
     errs = torch.abs(SR_volume - volume).flatten().cpu().numpy()
-    plt.hist(errs, bins=100, range=(0.0, errs.mean()+errs.std()*2), density=True)
+    plt.hist(errs, bins=100, range=(0.0, errs.mean()+errs.std()*2))
     plt.title("L1 error histogram")
     plt.xlabel("Error")
     plt.ylabel("Occurances")
+    ts, ys = plt.yticks()
+    ys = np.array(ys, dtype=float)
+    ys /= len(errs)
+    plt.yticks(ts, ys)
     plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
