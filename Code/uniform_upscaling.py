@@ -75,15 +75,29 @@ if __name__ == '__main__':
     else:
         s = ssim3D(SR_volume, volume).item()
 
-    errs = torch.abs(SR_volume - volume).flatten().cpu().numpy()
-    plt.hist(errs, bins=100, range=(0.0, errs.mean()+errs.std()*2))
-    plt.title("L1 error histogram")
+    errs = (SR_volume - volume).flatten().cpu().numpy()
+    print("Average abs error: %0.06f, median abs error: %0.06f" % \
+        (np.abs(errs).mean(), np.abs(errs).median()))
+        
+    plt.hist(errs, bins=100, range=(errs.mean()-errs.std()*2, errs.mean()+errs.std()*2))
+    plt.title("Error histogram")
+    plt.xlabel("Error")
+    plt.ylabel("Occurance (proportion)")
+    ys, _ = plt.yticks()
+    ys = np.array(ys, dtype=float)
+    plt.yticks(ys, np.around(ys / len(errs), 4))
+    plt.savefig(os.path.join(save_folder, args['save_name']+"_twosided_err_histogram.png"))
+    plt.clf()
+
+    plt.hist(np.abs(errs), bins=100, range=(0, np.abs(errs).mean()+np.abs(errs).std()*2))
+    plt.title("Absolute error histogram")
     plt.xlabel("Error")
     plt.ylabel("Occurance (proportion)")
     ys, _ = plt.yticks()
     ys = np.array(ys, dtype=float)
     plt.yticks(ys, np.around(ys / len(errs), 4))
     plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
+    plt.clf()
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
     rootgrp = Dataset(os.path.join(save_folder, args['save_name']+".nc"), "w", format="NETCDF4")
