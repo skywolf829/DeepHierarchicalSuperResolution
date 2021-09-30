@@ -81,6 +81,8 @@ if __name__ == '__main__':
     plt.xlabel("Error")
     plt.ylabel("Occurances")
     ts, ys = plt.yticks()
+    print(ts)
+    print(ys)
     ys = np.array(ys, dtype=float)
     ys /= len(errs)
     plt.yticks(ts, ys)
