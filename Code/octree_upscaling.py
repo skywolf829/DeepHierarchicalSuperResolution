@@ -562,6 +562,9 @@ if __name__ == '__main__':
 
     errs = torch.abs(MRSR_volume - volume).flatten().cpu().numpy()
     plt.hist(errs, bins=25)
+    plt.title("L1 error histogram")
+    plt.xlabel("Error")
+    plt.ylabel("Occurances")
     plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
