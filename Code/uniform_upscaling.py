@@ -82,7 +82,7 @@ if __name__ == '__main__':
     plt.ylabel("Occurances")
     ys, _ = plt.yticks()
     ys = np.array(ys, dtype=float)
-    plt.yticks(ys, ys / len(errs))
+    plt.yticks(ys, np.around(ys / len(errs), 4))
     plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
