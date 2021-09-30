@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import copy
 import threading
 import imageio
+import matplotlib.pyplot as plt
 
 
 def get_location2D(full_height: int, full_width : int, depth : int, index : int) -> Tuple[int, int]:
@@ -558,6 +559,10 @@ if __name__ == '__main__':
         s = ssim3D_distributed(MRSR_volume, volume).item()
     else:
         s = ssim3D(MRSR_volume, volume).item()
+
+    errs = torch.abs(MRSR_volume - volume).flatten().cpu().numpy()
+    plt.hist(errs, bins=25)
+    plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
     rootgrp = Dataset(os.path.join(save_folder, args['save_name']+".nc"), "w", format="NETCDF4")
