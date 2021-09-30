@@ -77,8 +77,8 @@ if __name__ == '__main__':
 
     errs = (SR_volume - volume).flatten().cpu().numpy()
     print("Average abs error: %0.06f, median abs error: %0.06f" % \
-        (np.abs(errs).mean(), np.abs(errs).median()))
-        
+        (np.abs(errs).mean(), np.median(np.abs(errs))))
+
     plt.hist(errs, bins=100, range=(errs.mean()-errs.std()*2, errs.mean()+errs.std()*2))
     plt.title("Error histogram")
     plt.xlabel("Error")
