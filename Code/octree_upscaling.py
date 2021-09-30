@@ -561,7 +561,7 @@ if __name__ == '__main__':
         s = ssim3D(MRSR_volume, volume).item()
 
     errs = torch.abs(MRSR_volume - volume).flatten().cpu().numpy()
-    plt.hist(errs, bins=200, range=(0.0, errs.max()))
+    plt.hist(errs, bins=100, range=(0.0, errs.mean()+errs.std()*2), density=True)
     plt.title("L1 error histogram")
     plt.xlabel("Error")
     plt.ylabel("Occurances")
