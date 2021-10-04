@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--volume_file',default="Plume.h5",type=str,help='File to octree-ify. Should be of shape [c, h, w, [d]]')    
     parser.add_argument('--scale_factor',default=4,type=int,help='Scale factor to do SR, power of 2')
-    parser.add_argument('--save_name',default="Plume_uniform_ESRGAN_upscaled_4x",type=str,help='Name to save the upscaled result as for rendering')
+    parser.add_argument('--save_name',default="Plume_uniform_ESRGAN_4x",type=str,help='Name to save the upscaled result as for rendering')
     parser.add_argument('--upscaling_method',default="model",type=str,help='How to upscale the data. Nearest, linear, or model')
     parser.add_argument('--model_name',default="Plume_ESRGAN",type=str,help='Model name to use, if using model')    
     parser.add_argument('--distributed',default="False",type=str2bool,help='Whether or not to upscale the volume in parallel on GPUs available')

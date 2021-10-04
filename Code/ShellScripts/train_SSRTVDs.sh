@@ -26,15 +26,15 @@ cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 #--model SSRTVD --generator_steps 1 --discriminator_steps 2
 
 python3 -u Code/train.py --save_name Plume_SSRTVD --train_distributed False --gpus_per_node 8 \
---num_workers 0 --data_folder Plume --mode 3D --patch_size 96 --training_patch_size 96 \
+--num_workers 0 --data_folder Plume --mode 3D --patch_size 64 --training_patch_size 64 \
 --beta_1 0.5 --beta_2 0.999 \
---epochs 100 --min_dimension_size 32 --cropping_resolution 96 --g_lr 0.0001 \
+--epochs 100 --min_dimension_size 32 --cropping_resolution 64 --g_lr 0.0001 \
 --alpha_1 1.0 --alpha_2 0.001 --d_lr 0.0004 \
 --model SSRTVD --generator_steps 1 --discriminator_steps 2
 
 python3 -u Code/train.py --save_name Vorts_SSRTVD --train_distributed False --gpus_per_node 8 \
 --beta_1 0.5 --beta_2 0.999 \
---num_workers 0 --data_folder Vorts --mode 3D --patch_size 96 --training_patch_size 96 \
---epochs 100 --min_dimension_size 32 --cropping_resolution 96 --g_lr 0.0001 \
+--num_workers 0 --data_folder Vorts --mode 3D --patch_size 64 --training_patch_size 64 \
+--epochs 100 --min_dimension_size 32 --cropping_resolution 64 --g_lr 0.0001 \
 --alpha_1 1.0 --alpha_2 0.001 --d_lr 0.0004 \
 --model SSRTVD --generator_steps 1 --discriminator_steps 2
