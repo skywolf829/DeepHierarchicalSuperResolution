@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--distributed',default="False",type=str2bool,help='Whether or not to upscale the volume in parallel on GPUs available')
     parser.add_argument('--device',default="cuda:0",type=str)
     parser.add_argument('--save_original_volume',default="False",type=str2bool,help='Write out the original volume as an NC for visualization too.')
+    parser.add_argument('--save_error_volume',default="False",type=str2bool,help='Write out the error volume as an NC for visualization too.')
     args = vars(parser.parse_args())
     
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
@@ -127,7 +128,19 @@ if __name__ == '__main__':
         else:
             dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
         dim_0[:] = volume[0,0].cpu().numpy()
+    if(args['save_error_volume']):
+        print("Saving error volume to " + os.path.join(save_folder, args['volume_file']+"_err.nc"))
+        rootgrp = Dataset(os.path.join(save_folder, args['volume_file']+"_err.nc"), "w", format="NETCDF4")
+        rootgrp.createDimension("u")
+        rootgrp.createDimension("v")
+        if(len(volume.shape) == 5):
+            rootgrp.createDimension("w")
 
+        if(len(volume.shape) == 5):
+            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))
+        else:
+            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
+        dim_0[:] = torch.abs(volume[0,0]-SR_volume[0,0]).cpu().numpy()
     print()
     print("################################# Statistics/metrics #################################")
     print()

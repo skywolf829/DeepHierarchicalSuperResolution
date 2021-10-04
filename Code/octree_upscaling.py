@@ -535,6 +535,7 @@ if __name__ == '__main__':
     parser.add_argument('--distributed',default="False",type=str2bool,help='Whether or not to upscale the volume in parallel on GPUs available')
     parser.add_argument('--device',default="cuda:0",type=str)
     parser.add_argument('--save_original_volume',default="True",type=str2bool,help='Write out the original volume as an NC for visualization too.')
+    parser.add_argument('--save_error_volume',default="False",type=str2bool,help='Write out the error volume as an NC for visualization too.')
     parser.add_argument('--save_downscaling_levels',default="True",
         type=str2bool,help='Write out the octree downscaling levels as images for visualization too.')
     parser.add_argument('--seams',default="False",
@@ -590,7 +591,7 @@ if __name__ == '__main__':
 
     errs = (MRSR_volume - volume).flatten().cpu().numpy()
     np.save(os.path.join(save_folder, args['save_name']+"_errs.npy"), errs)
-    
+
     print("Average abs error: %0.06f, median abs error: %0.06f" % \
         (np.abs(errs).mean(), np.median(np.abs(errs))))
 
@@ -640,6 +641,20 @@ if __name__ == '__main__':
         else:
             dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
         dim_0[:] = volume[0,0].cpu().numpy()
+
+    if(args['save_error_volume']):
+        print("Saving error volume to " + os.path.join(save_folder, args['volume_file']+"_err.nc"))
+        rootgrp = Dataset(os.path.join(save_folder, args['volume_file']+"_err.nc"), "w", format="NETCDF4")
+        rootgrp.createDimension("u")
+        rootgrp.createDimension("v")
+        if(len(volume.shape) == 5):
+            rootgrp.createDimension("w")
+
+        if(len(volume.shape) == 5):
+            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))
+        else:
+            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
+        dim_0[:] = torch.abs(volume[0,0]-MRSR_volume[0,0]).cpu().numpy()
 
     if(args['save_downscaling_levels']):
         print("Saving downscaling level images to " + os.path.join(save_folder, args['volume_file']+".nc"))
