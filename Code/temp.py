@@ -14,6 +14,7 @@ import torch.multiprocessing as mp
 import numpy as np
 import h5py
 from netCDF4 import Dataset
+import matplotlib.pyplot as plt
 
 project_folder_path = os.path.dirname(os.path.abspath(__file__))
 project_folder_path = os.path.join(project_folder_path, "..")
@@ -24,20 +25,32 @@ save_folder = os.path.join(project_folder_path, "SavedModels")
 
 
 if __name__ == '__main__':
-    f = h5py.File(os.path.join(data_folder, 'Plume.h5'), 'r')
-    d = torch.tensor(f.get('data'))
-    d = d[:,128:256,63,:].unsqueeze(0)
-    print(d.shape)
-    for i in range(1, 3):
-        rootgrp = Dataset(os.path.join(project_folder_path, "cut_down"+str(i)+".nc"), "w", format="NETCDF4")
-        rootgrp.createDimension("u")
-        rootgrp.createDimension("v")
+    uni = np.load(os.path.join(project_folder_path, "Plume_uniform_errs.npy"))    
+    hei = np.load(os.path.join(project_folder_path, "Plume_hierarchical_errs.npy"))
+    low = min(uni.mean()-uni.std()*2, hei.mean()-hei.std()*2)
+    hi = min(uni.mean()+uni.std()*2, hei.mean()+hei.std()*2)
 
-        dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
-        dim_0[:] = d[0,0,::int(2**i), ::int(2**i)].cpu().numpy()
+    plt.hist(uni, bins=100, range=(low, hi), label="Uniform SR", alpha=0.75)
+    plt.hist(hei, bins=100, range=(low, hi), label="Multiresolution SR", alpha=0.75)
+    plt.title("Error histogram")
+    plt.xlabel("Error")
+    plt.ylabel("Occurance (proportion)")
+    plt.legend()
+    ys, _ = plt.yticks()
+    ys = np.array(ys, dtype=float)
+    plt.yticks(ys, np.around(ys / len(uni), 4))
+    plt.show()
+    plt.clf()
 
-    f.close()
+    
+    hi = min(np.abs(uni).mean()+np.abs(uni).std()*2, np.abs(hei).mean()+np.abs(hei).std()*2)
 
-    f = h5py.File(os.path.join(data_folder, 'PlumeCut.h5'), 'w')
-    f.create_dataset('data', data=d[0])
-
+    plt.hist(np.abs(uni), bins=100, range=(0, hi), label="Uniform SR", alpha=0.75)
+    plt.hist(np.abs(hei), bins=100, range=(0, hi), label="Multiresolution SR", alpha=0.75)
+    plt.title("Absolute error histogram")
+    plt.xlabel("Error")
+    plt.ylabel("Occurance (proportion)")
+    ys, _ = plt.yticks()
+    ys = np.array(ys, dtype=float)
+    plt.yticks(ys, np.around(ys / len(uni), 4))
+    plt.show()
