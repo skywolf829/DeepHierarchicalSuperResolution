@@ -402,7 +402,7 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     
     return restored_volume
 
-def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], border=True) \
+def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], border=False) \
     -> Tuple[torch.Tensor, torch.Tensor]:
     device = octree[0].data.device
 
@@ -589,6 +589,8 @@ if __name__ == '__main__':
         s = ssim3D(MRSR_volume, volume).item()
 
     errs = (MRSR_volume - volume).flatten().cpu().numpy()
+    np.save(os.path.join(save_folder, args['save_name']+"_errs.npy"), errs)
+    
     print("Average abs error: %0.06f, median abs error: %0.06f" % \
         (np.abs(errs).mean(), np.median(np.abs(errs))))
 
