@@ -29,10 +29,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
     parser.add_argument('--volume_file',default="Plume.h5",type=str,help='File to octree-ify. Should be of shape [c, h, w, [d]]')    
-    parser.add_argument('--scale_factor',default=2,type=int,help='Scale factor to do SR, power of 2')
-    parser.add_argument('--save_name',default="Plume_uniform_upscaled_4x.nc",type=str,help='Name to save the upscaled result as for rendering')
+    parser.add_argument('--scale_factor',default=4,type=int,help='Scale factor to do SR, power of 2')
+    parser.add_argument('--save_name',default="Plume_uniform_ESRGAN_upscaled_4x",type=str,help='Name to save the upscaled result as for rendering')
     parser.add_argument('--upscaling_method',default="model",type=str,help='How to upscale the data. Nearest, linear, or model')
-    parser.add_argument('--model_name',default="Plume",type=str,help='Model name to use, if using model')    
+    parser.add_argument('--model_name',default="Plume_ESRGAN",type=str,help='Model name to use, if using model')    
     parser.add_argument('--distributed',default="False",type=str2bool,help='Whether or not to upscale the volume in parallel on GPUs available')
     parser.add_argument('--device',default="cuda:0",type=str)
     parser.add_argument('--save_original_volume',default="False",type=str2bool,help='Write out the original volume as an NC for visualization too.')
