@@ -130,7 +130,7 @@ if __name__ == '__main__':
         dim_0[:] = volume[0,0].cpu().numpy()
     if(args['save_error_volume']):
         print("Saving error volume to " + os.path.join(save_folder, args['volume_file']+"_err.nc"))
-        rootgrp = Dataset(os.path.join(save_folder, args['volume_file']+"_err.nc"), "w", format="NETCDF4")
+        rootgrp = Dataset(os.path.join(save_folder,  args['save_name']+"_err.nc"), "w", format="NETCDF4")
         rootgrp.createDimension("u")
         rootgrp.createDimension("v")
         if(len(volume.shape) == 5):
