@@ -402,7 +402,7 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     
     return restored_volume
 
-def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int]) \
+def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], border=True) \
     -> Tuple[torch.Tensor, torch.Tensor]:
     device = octree[0].data.device
 
@@ -433,58 +433,86 @@ def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[in
         if(len(octree[0].data.shape) == 4):
             x_start, y_start = get_location2D(full_shape[2], full_shape[3], curr_node.depth, curr_node.index)
             s : int = curr_node.LOD
-            full_img[:,:,
-                int(x_start): \
-                int(x_start)+ \
-                    int((curr_node.data.shape[2]*(2**curr_node.LOD))),
-                int(y_start): \
-                int(y_start)+ \
-                    int((curr_node.data.shape[3]*(2**curr_node.LOD)))
-            ] = torch.zeros([full_shape[0], 3, 
-            curr_node.data.shape[2]*(2**curr_node.LOD),
-            curr_node.data.shape[3]*(2**curr_node.LOD)])
-            full_img[:,:,
-                int(x_start)+1: \
-                int(x_start)+ \
-                    int((curr_node.data.shape[2]*(2**curr_node.LOD)))-1,
-                int(y_start)+1: \
-                int(y_start)+ \
-                    int((curr_node.data.shape[3]*(2**curr_node.LOD)))-1
-            ] = cmap[s].repeat(full_shape[0], 1, 
-            int((curr_node.data.shape[2]*(2**curr_node.LOD)))-2, 
-            int((curr_node.data.shape[3]*(2**curr_node.LOD)))-2)
+            if(border):
+                full_img[:,:,
+                    int(x_start): \
+                    int(x_start)+ \
+                        int((curr_node.data.shape[2]*(2**curr_node.LOD))),
+                    int(y_start): \
+                    int(y_start)+ \
+                        int((curr_node.data.shape[3]*(2**curr_node.LOD)))
+                ] = torch.zeros([full_shape[0], 3, 
+                curr_node.data.shape[2]*(2**curr_node.LOD),
+                curr_node.data.shape[3]*(2**curr_node.LOD)])
+                full_img[:,:,
+                    int(x_start)+1: \
+                    int(x_start)+ \
+                        int((curr_node.data.shape[2]*(2**curr_node.LOD)))-1,
+                    int(y_start)+1: \
+                    int(y_start)+ \
+                        int((curr_node.data.shape[3]*(2**curr_node.LOD)))-1
+                ] = cmap[s].repeat(full_shape[0], 1, 
+                int((curr_node.data.shape[2]*(2**curr_node.LOD)))-2, 
+                int((curr_node.data.shape[3]*(2**curr_node.LOD)))-2)
+            else:
+                full_img[:,:,
+                    int(x_start): \
+                    int(x_start)+ \
+                        int((curr_node.data.shape[2]*(2**curr_node.LOD))),
+                    int(y_start): \
+                    int(y_start)+ \
+                        int((curr_node.data.shape[3]*(2**curr_node.LOD)))
+                ] = cmap[s].repeat(full_shape[0], 1, 
+                int((curr_node.data.shape[2]*(2**curr_node.LOD))), 
+                int((curr_node.data.shape[3]*(2**curr_node.LOD))))
         elif(len(octree[0].data.shape) == 5):
             x_start, y_start, z_start = get_location3D(full_shape[2], full_shape[3], full_shape[4],
             curr_node.depth, curr_node.index)
             s : int = curr_node.LOD
-            full_img[:,:,
-                int(x_start): \
-                int(x_start)+ \
-                    int((curr_node.data.shape[2]*(2**curr_node.LOD))),
-                int(y_start): \
-                int(y_start)+ \
-                    int((curr_node.data.shape[3]*(2**curr_node.LOD))),
-                int(z_start): \
-                int(z_start)+ \
-                    int((curr_node.data.shape[4]*(2**curr_node.LOD)))
-            ] = torch.zeros([full_shape[0], 3, 
-            curr_node.data.shape[2]*(2**curr_node.LOD),
-            curr_node.data.shape[3]*(2**curr_node.LOD),
-            curr_node.data.shape[4]*(2**curr_node.LOD)])
-            full_img[:,:,
-                int(x_start)+1: \
-                int(x_start)+ \
-                    int((curr_node.data.shape[2]*(2**curr_node.LOD)))-1,
-                int(y_start)+1: \
-                int(y_start)+ \
-                    int((curr_node.data.shape[3]*(2**curr_node.LOD)))-1,
-                int(z_start)+1: \
-                int(z_start)+ \
-                    int((curr_node.data.shape[4]*(2**curr_node.LOD)))-1
-            ] = cmap[s].repeat(full_shape[0], 1, 
-            int((curr_node.data.shape[2]*(2**curr_node.LOD)))-2, 
-            int((curr_node.data.shape[3]*(2**curr_node.LOD)))-2,
-            int((curr_node.data.shape[4]*(2**curr_node.LOD)))-2)
+            if(border):
+                full_img[:,:,
+                    int(x_start): \
+                    int(x_start)+ \
+                        int((curr_node.data.shape[2]*(2**curr_node.LOD))),
+                    int(y_start): \
+                    int(y_start)+ \
+                        int((curr_node.data.shape[3]*(2**curr_node.LOD))),
+                    int(z_start): \
+                    int(z_start)+ \
+                        int((curr_node.data.shape[4]*(2**curr_node.LOD)))
+                ] = torch.zeros([full_shape[0], 3, 
+                curr_node.data.shape[2]*(2**curr_node.LOD),
+                curr_node.data.shape[3]*(2**curr_node.LOD),
+                curr_node.data.shape[4]*(2**curr_node.LOD)])
+                full_img[:,:,
+                    int(x_start)+1: \
+                    int(x_start)+ \
+                        int((curr_node.data.shape[2]*(2**curr_node.LOD)))-1,
+                    int(y_start)+1: \
+                    int(y_start)+ \
+                        int((curr_node.data.shape[3]*(2**curr_node.LOD)))-1,
+                    int(z_start)+1: \
+                    int(z_start)+ \
+                        int((curr_node.data.shape[4]*(2**curr_node.LOD)))-1
+                ] = cmap[s].repeat(full_shape[0], 1, 
+                int((curr_node.data.shape[2]*(2**curr_node.LOD)))-2, 
+                int((curr_node.data.shape[3]*(2**curr_node.LOD)))-2,
+                int((curr_node.data.shape[4]*(2**curr_node.LOD)))-2)
+            else:
+               full_img[:,:,
+                    int(x_start): \
+                    int(x_start)+ \
+                        int((curr_node.data.shape[2]*(2**curr_node.LOD))),
+                    int(y_start): \
+                    int(y_start)+ \
+                        int((curr_node.data.shape[3]*(2**curr_node.LOD))),
+                    int(z_start): \
+                    int(z_start)+ \
+                        int((curr_node.data.shape[4]*(2**curr_node.LOD)))
+                ] = cmap[s].repeat(full_shape[0], 1, 
+                int((curr_node.data.shape[2]*(2**curr_node.LOD))), 
+                int((curr_node.data.shape[3]*(2**curr_node.LOD))),
+                int((curr_node.data.shape[4]*(2**curr_node.LOD)))) 
     cmap_img_height : int = 64
     cmap_img_width : int = 512
     cmap_img = torch.zeros([cmap_img_width, cmap_img_height, 3], dtype=torch.float, device=device)
