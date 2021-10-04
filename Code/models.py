@@ -394,10 +394,13 @@ class SSRTVD_G_2x(nn.Module):
         self.IB3 = IB(opt, 64+16, 128)
 
        
-        self.deconv = nn.ConvTranspose3d(128, 32, 4, 2, 1) \
-            if opt['mode'] == "3D" else nn.ConvTranspose2d(128, 32, 4, 2, 1)
-        self.deconv_IB1 = IB(opt, 32, 8)
-        self.deconv_IB2 = IB(opt, 8+32, 1)
+        self.deconv = nn.ConvTranspose3d(128, 128, 4, 2, 1) \
+            if opt['mode'] == "3D" else nn.ConvTranspose2d(128, 128, 4, 2, 1)
+        self.deconv_IB1 = IB(opt, 128, 128)
+        self.deconv_IB2 = IB(opt, 128+128, 64)
+        self.deconv_IB3 = IB(opt, 64, 32)
+        self.deconv_IB4 = IB(opt, 32, 8)
+        self.deconv_IB5 = IB(opt, 8+32, 1)
 
     def forward(self,x):
         x = F.relu(self.IB1(x))
@@ -407,7 +410,12 @@ class SSRTVD_G_2x(nn.Module):
         x = F.relu(self.deconv(x))
         x_concat = F.relu(self.deconv_IB1(x))
         x = torch.cat([x, x_concat], dim=1)
-        x = torch.tanh(self.deconv_IB2(x))
+        x = F.relu(self.deconv_IB2)
+        x = F.relu(self.deconv_IB3)
+        x_concat = F.relu(self.deconv_IB4(x))
+        x = torch.cat([x, x_concat], dim=1)
+        x = torch.tanh(self.deconv_IB5(x))
+
         return (x+1)/2
 
 class SSRTVD_D_S(nn.Module):
