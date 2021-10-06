@@ -368,7 +368,7 @@ def upscale_volume(octree, full_shape, upscale):
 
     curr_LOD = octree.max_LOD()
 
-    restored_volume = data_downscaled_levels[curr_LOD]
+    restored_volume = data_downscaled_levels[curr_LOD].clone()
     while(curr_LOD > 0):
         
         restored_volume = upscale(restored_volume, 2, curr_LOD)
@@ -529,9 +529,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--octree_file',default="Plume.octree",type=str,help='Octree file to load and super resolve')
     parser.add_argument('--volume_file',default="Plume.h5",type=str,help='File to octree-ify. Should be of shape [c, h, w, [d]]')
-    parser.add_argument('--save_name',default="Plume_upscaled.nc",type=str,help='Name to save the upscaled result as for rendering')
-    parser.add_argument('--upscaling_method',default="nearest",type=str,help='How to upscale the data. Nearest, linear, or model')
-    parser.add_argument('--model_name',default="Plume",type=str,help='Model name to use, if using model')    
+    parser.add_argument('--save_name',default="Plume_64xreduction",type=str,help='Name to save the upscaled result as for rendering')
+    parser.add_argument('--upscaling_method',default="model",type=str,help='How to upscale the data. Nearest, linear, or model')
+    parser.add_argument('--model_name',default="Plume_ESRGAN",type=str,help='Model name to use, if using model')    
     parser.add_argument('--distributed',default="False",type=str2bool,help='Whether or not to upscale the volume in parallel on GPUs available')
     parser.add_argument('--device',default="cuda:0",type=str)
     parser.add_argument('--save_original_volume',default="True",type=str2bool,help='Write out the original volume as an NC for visualization too.')

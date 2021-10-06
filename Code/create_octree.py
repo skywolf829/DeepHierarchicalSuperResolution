@@ -127,11 +127,14 @@ class OctreeNodeList:
     
     def num_voxels(self):
         total = 0
+        t_v = 0
         for i in range(len(self.node_list)):
             this_total = 1
             for j in range(2, len(self.node_list[i].data.shape)):
                 this_total *= self.node_list[i].data.shape[j]
+            t_v += this_total * (2**self.node_list[i].LOD)**(len(self.node_list[i].data.shape)-2)
             total += this_total
+        #print("t_v: " + str(t_v))
         return total
 
     def max_LOD(self):
@@ -288,17 +291,21 @@ def split_node(n):
 def voxels_at_each_LOD(nodes):
     voxel_breakdown = {}
     node_breakdown = {}
+    voxel_breakdown_total = {}
+    
     for i in range(len(nodes)):
         n = nodes[i]
         if(n.LOD not in voxel_breakdown):
             voxel_breakdown[n.LOD] = 0
+            voxel_breakdown_total[n.LOD] = 0
             node_breakdown[n.LOD] = 0
         n_voxels = 1
         for j in range(2, len(n.data.shape)):
             n_voxels *= n.data.shape[j]
         voxel_breakdown[n.LOD] += n_voxels
+        voxel_breakdown_total[n.LOD] += n_voxels*(2**n.LOD)**(len(n.data.shape)-2)
         node_breakdown[n.LOD] += 1
-    return voxel_breakdown, node_breakdown
+    return voxel_breakdown, node_breakdown, voxel_breakdown_total
 
 def downscale(data):
     if(len(data.shape) == 4):
@@ -329,11 +336,15 @@ def check_next_node(octree, queue, max_downscaling_level, min_chunk, epsilon):
     return res1, res2
 
 def volume_to_octree(volume, epsilon, min_chunk, max_downscaling_level, 
-    octree=None, parallel=False):
+    min_downscaling_level, octree=None, parallel=False):
     if(octree is None):
         root = OctreeNode(volume.clone(), 0, 0, 0)
         octree = OctreeNodeList(full_shape=list(volume.shape))
         octree.append(root)
+        while(min_downscaling_level > 0):
+            octree[0].LOD += 1
+            octree[0].data = downscale(octree[0].data)
+            min_downscaling_level -= 1
 
     queue = ThreadsafeList()
     for node in octree.node_list:
@@ -356,7 +367,7 @@ def volume_to_octree(volume, epsilon, min_chunk, max_downscaling_level,
     return octree      
 
 def coarsen_octree(volume, octree, min_chunk,
-    max_downscaling_level, target_voxel_reduction, 
+    max_downscaling_level, min_downscaling_level, target_voxel_reduction, 
     eps_start = 0.0, eps_delta=1e-3):
     
     total_voxels = 1
@@ -371,7 +382,7 @@ def coarsen_octree(volume, octree, min_chunk,
         
         start_t = time.time()
         octree = volume_to_octree(volume, epsilon, min_chunk, max_downscaling_level,
-            octree)
+            min_downscaling_level, octree)
         end_t = time.time()
 
         print("Reduction rate %0.02f at epsilon=%0.04f in %0.02f seconds" % \
@@ -544,6 +555,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_name',default="Plume.octree",type=str,help='Name for trial in results.pkl')
     parser.add_argument('--epsilon',default=0.1,type=float,help='PSNR to start tests at')
     
+    parser.add_argument('--min_downscaling_level',default=0,type=int,help="The minimum downscaling level to support in the created octree")
     parser.add_argument('--max_downscaling_level',default=9,type=int,help="The maximum downscaling level to support in the created octree")
     parser.add_argument('--min_chunk',default=2,type=int,help="Minimum block size to reduce")
     parser.add_argument('--device',default="cuda:0",type=str)
@@ -568,7 +580,8 @@ if __name__ == '__main__':
     if args['target_reduction_rate'] is None:
         print("Octreeifying the volume of size " + str(volume.shape))
         start_time = time.time()
-        octree = volume_to_octree(volume, args['epsilon'], args['min_chunk'], args['max_downscaling_level'])
+        octree = volume_to_octree(volume, args['epsilon'], args['min_chunk'], 
+        args['max_downscaling_level'], args['min_downscaling_level'])
         end_time = time.time()
         print("Octreeification took %0.02f seconds" % (end_time-start_time))
 
@@ -586,13 +599,16 @@ if __name__ == '__main__':
                 total_voxels / octree.num_voxels()))
         print()
         
-        voxel_breakdown, node_breakdown = voxels_at_each_LOD(octree)
+        voxel_breakdown, node_breakdown, voxel_breakdown_total = voxels_at_each_LOD(octree)
 
         lods = list(voxel_breakdown.keys())
         lods.sort()
         for i in range(len(lods)):
-            print("Voxels at downscaling level %i: %i (%0.02f percent)" % (lods[i], voxel_breakdown[lods[i]], 100*voxel_breakdown[lods[i]] / octree.num_voxels()))
-            print("Nodes at downscaling level %i: %i (%0.02f percent)" % (lods[i], node_breakdown[lods[i]], 100*node_breakdown[lods[i]] / len(octree)))
+            print("Voxels at downscaling level %i: %i (%0.02f percent)" % \
+                (lods[i], voxel_breakdown_total[lods[i]], 100*voxel_breakdown_total[lods[i]] / total_voxels))
+        for i in range(len(lods)):
+            print("Nodes at downscaling level %i: %i (%0.02f percent)" % \
+                (lods[i], node_breakdown[lods[i]], 100*node_breakdown[lods[i]] / len(octree)))
 
 
         print("")
@@ -615,7 +631,7 @@ if __name__ == '__main__':
         octree.append(root)
         start_time = time.time()
         octree = coarsen_octree(volume, octree, args['min_chunk'], args['max_downscaling_level'],
-            args['target_reduction_rate'], eps_start=args['epsilon'])
+            args['min_downscaling_level'], args['target_reduction_rate'], eps_start=args['epsilon'])
         end_time = time.time()
         print("Total reduction time is %0.02f seconds" % (end_time - start_time))
         print()
@@ -627,13 +643,17 @@ if __name__ == '__main__':
             (octree.num_voxels(), 100* octree.num_voxels() / total_voxels, 
                 total_voxels / octree.num_voxels()))
     
-    voxel_breakdown, node_breakdown = voxels_at_each_LOD(octree)
+    voxel_breakdown, node_breakdown, voxel_breakdown_total = voxels_at_each_LOD(octree)
 
     lods = list(voxel_breakdown.keys())
     lods.sort()
+    print(lods)
     for i in range(len(lods)):
-        print("Voxels at downscaling level %i: %i (%0.02f percent)" % (lods[i], voxel_breakdown[lods[i]], 100*voxel_breakdown[lods[i]] / octree.num_voxels()))
-        print("Nodes at downscaling level %i: %i (%0.02f percent)" % (lods[i], node_breakdown[lods[i]], 100*node_breakdown[lods[i]] / len(octree)))
+        print("Voxels at downscaling level %i: %i (%i, %0.02f percent)" % \
+            (lods[i], voxel_breakdown_total[lods[i]], voxel_breakdown[lods[i]],  100*voxel_breakdown_total[lods[i]] / total_voxels))
+    for i in range(len(lods)):
+        print("Nodes at downscaling level %i: %i (%0.02f percent)" % \
+            (lods[i], node_breakdown[lods[i]], 100*node_breakdown[lods[i]] / len(octree)))
 
     octree.save(os.path.join(save_folder, args['save_name']))
     #torch.save(octree.node_list, os.path.join(save_folder, args['save_name']))

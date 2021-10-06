@@ -25,13 +25,15 @@ save_folder = os.path.join(project_folder_path, "SavedModels")
 
 
 if __name__ == '__main__':
-    uni = np.load(os.path.join(project_folder_path, "Plume_uniform_errs.npy"))    
-    hei = np.load(os.path.join(project_folder_path, "Plume_hierarchical_errs.npy"))
+    uni = np.load(os.path.join(project_folder_path, "Output", 
+        "UpscaledOctreeData", "Plume_uniform_ESRGAN_4x_errs.npy"))    
+    hei = np.load(os.path.join(project_folder_path, "Output", 
+        "UpscaledOctreeData", "Plume_psnrcomparison_errs.npy")) 
     low = min(uni.mean()-uni.std()*2, hei.mean()-hei.std()*2)
     hi = min(uni.mean()+uni.std()*2, hei.mean()+hei.std()*2)
 
-    plt.hist(uni, bins=100, range=(low, hi), label="Uniform SR", alpha=0.75)
-    plt.hist(hei, bins=100, range=(low, hi), label="Multiresolution SR", alpha=0.75)
+    plt.hist(uni, bins=100, range=(low, hi), label="Uniform SR", alpha=0.75, color='tab:orange')
+    plt.hist(hei, bins=100, range=(low, hi), label="Multiresolution SR", alpha=0.75, color='tab:blue')
     plt.title("Error histogram")
     plt.xlabel("Error")
     plt.ylabel("Occurance (proportion)")
@@ -45,11 +47,12 @@ if __name__ == '__main__':
     
     hi = min(np.abs(uni).mean()+np.abs(uni).std()*2, np.abs(hei).mean()+np.abs(hei).std()*2)
 
-    plt.hist(np.abs(uni), bins=100, range=(0, hi), label="Uniform SR", alpha=0.75)
-    plt.hist(np.abs(hei), bins=100, range=(0, hi), label="Multiresolution SR", alpha=0.75)
+    plt.hist(np.abs(uni), bins=100, range=(0, hi), label="Uniform SR", alpha=0.75, color='tab:orange')
+    plt.hist(np.abs(hei), bins=100, range=(0, hi), label="Multiresolution SR", alpha=0.75, color='tab:blue')
     plt.title("Absolute error histogram")
     plt.xlabel("Error")
     plt.ylabel("Occurance (proportion)")
+    plt.legend()
     ys, _ = plt.yticks()
     ys = np.array(ys, dtype=float)
     plt.yticks(ys, np.around(ys / len(uni), 4))
