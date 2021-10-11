@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     font = {#'font.family' : 'normal',
         #'font.weight' : 'bold',
-        'font.size'   : 16}
+        'font.size'   : 15}
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
@@ -113,7 +113,8 @@ if __name__ == '__main__':
             plt.plot(x, y, label=l)
 
         #plt.legend()        
-        plt.xlabel("Scale factor")
+        if(metric == "SSIM"):
+            plt.xlabel("Scale factor")
         if(args['output_file_name'] == "Isomag2D.results"):
             plt.ylabel(y_label)
         plt.xscale('log')
