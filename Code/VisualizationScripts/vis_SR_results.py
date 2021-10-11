@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     font = {#'font.family' : 'normal',
         #'font.weight' : 'bold',
-        'font.size'   : 12}
+        'font.size'   : 16}
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
@@ -64,7 +64,10 @@ if __name__ == '__main__':
                     args['start_ts'] + args['ts_skip']*len(results[scale_factor][SR_type][metric]),
                     args['ts_skip'])
                 y = results[scale_factor][SR_type][metric]
-                plt.plot(x, y, label=SR_type)
+                l = SR_type
+                if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
+                    l = SR_type + " hierarchy"
+                plt.plot(x, y, label=l)
 
             plt.legend()
             plt.xlabel("Timestep")
@@ -104,7 +107,10 @@ if __name__ == '__main__':
             # model results plotting
             x = scale_factors
             y = averaged_results[SR_type][metric]
-            plt.plot(x, y, label=SR_type)
+            l = SR_type
+            if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
+                l = SR_type + " hierarchy"
+            plt.plot(x, y, label=l)
 
         plt.legend()
         plt.xlabel("Scale factor")
@@ -127,8 +133,11 @@ if __name__ == '__main__':
         x = scale_factors
         left_y = averaged_results[SR_type][left_y_label]
         right_y = averaged_results[SR_type][right_y_label]
-        ax1.plot(x, left_y, label=SR_type, marker="s")
-        ax2.plot(x, right_y, label=SR_type, marker="^", linestyle='dashed')
+        l = SR_type
+        if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
+            l = SR_type + " hierarchy"
+        ax1.plot(x, left_y, label=l, marker="s")
+        ax2.plot(x, right_y, label=l, marker="^", linestyle='dashed')
 
     ax1.legend()
     #ax2.legend()

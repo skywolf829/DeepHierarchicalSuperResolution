@@ -574,6 +574,7 @@ if __name__ == '__main__':
     d = torch.tensor(f.get('data'))
     f.close()
     volume = d.unsqueeze(0).to(args['device'])
+    volume = volume[:,:,0:128,:,64]
 
     print("Data range: %0.02f - %0.02f, mean: %0.02f" % (volume.min(), volume.max(), volume.mean()))
     
