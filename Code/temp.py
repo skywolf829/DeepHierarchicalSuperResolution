@@ -24,7 +24,7 @@ save_folder = os.path.join(project_folder_path, "SavedModels")
 
 
 
-if __name__ == '__main__':
+def create_err_hist():
     uni = np.load(os.path.join(project_folder_path, "Output", 
         "UpscaledOctreeData", "Plume_uniform_ESRGAN_4x_errs.npy"))    
     hei = np.load(os.path.join(project_folder_path, "Output", 
@@ -57,3 +57,6 @@ if __name__ == '__main__':
     ys = np.array(ys, dtype=float)
     plt.yticks(ys, np.around(ys / len(uni), 4))
     plt.show()
+
+if __name__ == '__main__':
+    plume = h5py.Dataset(os.path.join())

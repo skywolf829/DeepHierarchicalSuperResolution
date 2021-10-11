@@ -1,4 +1,5 @@
 import torch
+from torch import tensor
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.jit
@@ -369,20 +370,27 @@ def upscale_volume(octree, full_shape, upscale):
     curr_LOD = octree.max_LOD()
 
     restored_volume = data_downscaled_levels[curr_LOD].clone()
+    step = 0
+    tensor_to_nc(restored_volume, str(step)+'_orig.nc')
+    step += 1
     while(curr_LOD > 0):
         
         restored_volume = upscale(restored_volume, 2, curr_LOD)
+        tensor_to_nc(restored_volume, str(step)+'_upscale.nc')
         torch.cuda.synchronize()
         curr_LOD -= 1
 
         restored_volume *= (~mask_downscaled_levels[curr_LOD])
         data_downscaled_levels[curr_LOD] *= mask_downscaled_levels[curr_LOD] 
         restored_volume += data_downscaled_levels[curr_LOD]
+        tensor_to_nc(restored_volume, str(step)+'_replace.nc')
+        step += 1
 
     while(len(data_downscaled_levels) > 0):
         del data_downscaled_levels[0]
         del mask_downscaled_levels[0]
-
+        
+    step += 1
     return restored_volume
 
 def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int], 
@@ -402,7 +410,8 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     
     return restored_volume
 
-def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], border=False) \
+def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], 
+    border=False) \
     -> Tuple[torch.Tensor, torch.Tensor]:
     device = octree[0].data.device
 
@@ -524,6 +533,18 @@ def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[in
 
     return full_img, cmap_img
 
+def tensor_to_nc(volume, path):
+    rootgrp = Dataset(path, "w", format="NETCDF4")
+    rootgrp.createDimension("u")
+    rootgrp.createDimension("v")
+    if(len(volume.shape) == 5):
+        rootgrp.createDimension("w")
+    if(len(volume.shape) == 5):
+        dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))
+    else:
+        dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
+    dim_0[:] = volume[0,0].cpu().numpy()
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
 
@@ -540,6 +561,9 @@ if __name__ == '__main__':
         type=str2bool,help='Write out the octree downscaling levels as images for visualization too.')
     parser.add_argument('--seams',default="False",
         type=str2bool,help='Upscale blocks individually instead of using our MRSR algorithm')
+    parser.add_argument('--compute_metrics',default="True",type=str2bool,help='Compute PSNR/SSIM')
+    parser.add_argument('--border_on_octree',default="True",type=str2bool,help='Show border on octree vis')
+
     args = vars(parser.parse_args())
     
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
@@ -554,6 +578,7 @@ if __name__ == '__main__':
     d = torch.tensor(f.get('data'))
     f.close()
     volume = d.unsqueeze(0).to(args['device'])
+    volume = volume[:,:,0:128,:,64]
 
     print("Loading octree from " + octree_path)
     #octree = torch.load(octree_path)
@@ -581,85 +606,57 @@ if __name__ == '__main__':
         else:
             total_inference_calls = octree.max_LOD()
         print("Total number of inference calls was %i" % total_inference_calls)
-    p = PSNR_torch(MRSR_volume, volume).item()
-    if(len(volume.shape) == 4):
-        s = ssim(MRSR_volume, volume).item()
-    elif len(volume.shape) == 5 and args['distributed']:
-        s = ssim3D_distributed(MRSR_volume, volume).item()
-    else:
-        s = ssim3D(MRSR_volume, volume).item()
+    if(args['compute_metrics']):
+        p = PSNR_torch(MRSR_volume, volume).item()
+        if(len(volume.shape) == 4):
+            s = ssim(MRSR_volume, volume).item()
+        elif len(volume.shape) == 5 and args['distributed']:
+            s = ssim3D_distributed(MRSR_volume, volume).item()
+        else:
+            s = ssim3D(MRSR_volume, volume).item()
 
-    errs = (MRSR_volume - volume).flatten().cpu().numpy()
-    np.save(os.path.join(save_folder, args['save_name']+"_errs.npy"), errs)
+        errs = (MRSR_volume - volume).flatten().cpu().numpy()
+        np.save(os.path.join(save_folder, args['save_name']+"_errs.npy"), errs)
 
-    print("Average abs error: %0.06f, median abs error: %0.06f" % \
-        (np.abs(errs).mean(), np.median(np.abs(errs))))
+        print("Average abs error: %0.06f, median abs error: %0.06f" % \
+            (np.abs(errs).mean(), np.median(np.abs(errs))))
 
-    plt.hist(errs, bins=100, range=(errs.mean()-errs.std()*2, errs.mean()+errs.std()*2))
-    plt.title("Error histogram")
-    plt.xlabel("Error")
-    plt.ylabel("Occurance (proportion)")
-    ys, _ = plt.yticks()
-    ys = np.array(ys, dtype=float)
-    plt.yticks(ys, np.around(ys / len(errs), 4))
-    plt.savefig(os.path.join(save_folder, args['save_name']+"_twosided_err_histogram.png"))
-    plt.clf()
+        plt.hist(errs, bins=100, range=(errs.mean()-errs.std()*2, errs.mean()+errs.std()*2))
+        plt.title("Error histogram")
+        plt.xlabel("Error")
+        plt.ylabel("Occurance (proportion)")
+        ys, _ = plt.yticks()
+        ys = np.array(ys, dtype=float)
+        plt.yticks(ys, np.around(ys / len(errs), 4))
+        plt.savefig(os.path.join(save_folder, args['save_name']+"_twosided_err_histogram.png"))
+        plt.clf()
 
-    plt.hist(np.abs(errs), bins=100, range=(0, np.abs(errs).mean()+np.abs(errs).std()*2))
-    plt.title("Absolute error histogram")
-    plt.xlabel("Error")
-    plt.ylabel("Occurance (proportion)")
-    ys, _ = plt.yticks()
-    ys = np.array(ys, dtype=float)
-    plt.yticks(ys, np.around(ys / len(errs), 4))
-    plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
-    plt.clf()
+        plt.hist(np.abs(errs), bins=100, range=(0, np.abs(errs).mean()+np.abs(errs).std()*2))
+        plt.title("Absolute error histogram")
+        plt.xlabel("Error")
+        plt.ylabel("Occurance (proportion)")
+        ys, _ = plt.yticks()
+        ys = np.array(ys, dtype=float)
+        plt.yticks(ys, np.around(ys / len(errs), 4))
+        plt.savefig(os.path.join(save_folder, args['save_name']+"_err_histogram.png"))
+        plt.clf()
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
-    rootgrp = Dataset(os.path.join(save_folder, args['save_name']+".nc"), "w", format="NETCDF4")
-    rootgrp.createDimension("u")
-    rootgrp.createDimension("v")
-    if(len(MRSR_volume.shape) == 5):
-        rootgrp.createDimension("w")
-
-    if(len(MRSR_volume.shape) == 5):
-        dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))
-    else:
-        dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
-    dim_0[:] = MRSR_volume[0,0].cpu().numpy()
+    tensor_to_nc(MRSR_volume, os.path.join(save_folder, args['save_name']+".nc"))
 
     if(args['save_original_volume']):
         print("Saving upscaled volume to " + os.path.join(save_folder, args['volume_file']+".nc"))
-        rootgrp = Dataset(os.path.join(save_folder, args['volume_file']+".nc"), "w", format="NETCDF4")
-        rootgrp.createDimension("u")
-        rootgrp.createDimension("v")
-        if(len(volume.shape) == 5):
-            rootgrp.createDimension("w")
+        tensor_to_nc(volume, os.path.join(save_folder, args['volume_file']+".nc"))
 
-        if(len(volume.shape) == 5):
-            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))
-        else:
-            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
-        dim_0[:] = volume[0,0].cpu().numpy()
-
-    if(args['save_error_volume']):
+    if(args['compute_metrics'] and args['save_error_volume']):
         print("Saving error volume to " + os.path.join(save_folder, args['volume_file']+"_err.nc"))
-        rootgrp = Dataset(os.path.join(save_folder, args['save_name']+"_err.nc"), "w", format="NETCDF4")
-        rootgrp.createDimension("u")
-        rootgrp.createDimension("v")
-        if(len(volume.shape) == 5):
-            rootgrp.createDimension("w")
-
-        if(len(volume.shape) == 5):
-            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))
-        else:
-            dim_0 = rootgrp.createVariable("data", np.float32, ("u","v"))
-        dim_0[:] = torch.abs(volume[0,0]-MRSR_volume[0,0]).cpu().numpy()
+        tensor_to_nc(torch.abs(volume[0,0]-MRSR_volume[0,0]).cpu().numpy(),
+            os.path.join(save_folder, args['save_name']+"_err.nc"))
 
     if(args['save_downscaling_levels']):
         print("Saving downscaling level images to " + os.path.join(save_folder, args['volume_file']+".nc"))
         downscaling_levels_img, cmap_img = \
-            upscale_volume_downscalinglevels(octree, volume.shape)
+            upscale_volume_downscalinglevels(octree, volume.shape, args['border_on_octree'])
         if(len(downscaling_levels_img.shape) == 5):
             downscaling_levels_img = downscaling_levels_img[..., int(downscaling_levels_img.shape[-1]/2)+1]
         imageio.imwrite(os.path.join(save_folder, args['octree_file'] + ".png"),
@@ -668,9 +665,7 @@ if __name__ == '__main__':
             cmap_img.cpu().numpy())
 
     print()
-    print("################################# Statistics/metrics #################################")
-    print()
-
-    
-
-    print("PSNR: %0.02f, SSIM: %0.02f" % (p, s))
+    if(args['compute_metrics']):
+        print("################################# Statistics/metrics #################################")
+        print()
+        print("PSNR: %0.02f, SSIM: %0.02f" % (p, s))
