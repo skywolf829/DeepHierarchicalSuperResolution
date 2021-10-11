@@ -112,13 +112,18 @@ if __name__ == '__main__':
                 l = SR_type + " hierarchy"
             plt.plot(x, y, label=l)
 
-        plt.legend()
+        #plt.legend()        
         plt.xlabel("Scale factor")
-        plt.ylabel(y_label)
+        if(args['output_file_name'] == "Isomag2D.results"):
+            plt.ylabel(y_label)
         plt.xscale('log')
         plt.minorticks_off()
         plt.xticks(scale_factors, labels=scale_factors)
         plt.title("Median " + metric + " over SR factors")
+        if(metric == "PSNR (dB)"):
+            plt.ylim(bottom=20, top=55)
+        elif(metric == "SSIM"):
+            plt.ylim(bottom=0.45, top=1.0)
         plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"))
         plt.clf()
 
