@@ -119,7 +119,7 @@ if __name__ == '__main__':
         plt.xscale('log')
         plt.minorticks_off()
         plt.xticks(scale_factors, labels=scale_factors)
-        plt.title("Median " + metric + " over SR factors")
+        #plt.title("Median " + metric + " over SR factors")
         if(metric == "PSNR (dB)"):
             plt.ylim(bottom=20, top=55)
         elif(metric == "SSIM"):
