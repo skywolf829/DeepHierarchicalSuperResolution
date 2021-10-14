@@ -19,9 +19,18 @@ if __name__ == '__main__':
     parser.add_argument('--start_ts', default=4000, type=int)
     parser.add_argument('--ts_skip', default=100, type=int)
     
+    
+
+    #plt.style.use('Solarize_Light2')
+    #plt.style.use('fivethirtyeight')
+    plt.style.use('ggplot')
+    #plt.style.use('seaborn')
+    #plt.style.use('seaborn-paper')
+
     font = {#'font.family' : 'normal',
         #'font.weight' : 'bold',
-        'font.size'   : 15}
+        'font.size'   : 22,
+        'lines.linewidth' : 5}
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
@@ -74,7 +83,7 @@ if __name__ == '__main__':
             plt.ylabel(y_label)
 
             plt.title(scale_factor + " SR - " + metric)
-            plt.savefig(os.path.join(save_folder, scale_factor, metric+".png"))
+            plt.savefig(os.path.join(save_folder, scale_factor, metric+".png"),bbox_inches='tight',dpi=100)
             plt.clf()
 
     # Overall graphs
@@ -112,7 +121,8 @@ if __name__ == '__main__':
                 l = SR_type + " hierarchy"
             plt.plot(x, y, label=l)
 
-        #plt.legend()        
+        #plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
+        #        mode="expand", borderaxespad=0, ncol=3)
         if(metric == "SSIM"):
             plt.xlabel("Scale factor")
         if(args['output_file_name'] == "Isomag2D.results"):
@@ -123,9 +133,13 @@ if __name__ == '__main__':
         #plt.title("Median " + metric + " over SR factors")
         if(metric == "PSNR (dB)"):
             plt.ylim(bottom=20, top=55)
+            plt.title(args['output_file_name'].split(".")[0])
         elif(metric == "SSIM"):
             plt.ylim(bottom=0.45, top=1.0)
-        plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"))
+        plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"),
+            bbox_inches='tight',
+            dpi=100)
+        #plt.show()
         plt.clf()
 
     fig, ax1 = plt.subplots()
@@ -157,5 +171,5 @@ if __name__ == '__main__':
     ax1.set_xticks(scale_factors)
     ax1.set_xticklabels(scale_factors)
     ax1.set_title("Median PSNR/SSIM over SR factors")
-    plt.savefig(os.path.join(save_folder, "MedianValues", "Combined.png"))
+    plt.savefig(os.path.join(save_folder, "MedianValues", "Combined.png"),bbox_inches='tight',dpi=100)
     plt.clf()
