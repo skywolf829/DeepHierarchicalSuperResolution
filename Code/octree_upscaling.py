@@ -371,19 +371,19 @@ def upscale_volume(octree, full_shape, upscale):
 
     restored_volume = data_downscaled_levels[curr_LOD].clone()
     step = 0
-    tensor_to_nc(restored_volume, str(step)+'_orig.nc')
+    #tensor_to_nc(restored_volume, str(step)+'_orig.nc')
     step += 1
     while(curr_LOD > 0):
         
         restored_volume = upscale(restored_volume, 2, curr_LOD)
-        tensor_to_nc(restored_volume, str(step)+'_upscale.nc')
+        #tensor_to_nc(restored_volume, str(step)+'_upscale.nc')
         torch.cuda.synchronize()
         curr_LOD -= 1
 
         restored_volume *= (~mask_downscaled_levels[curr_LOD])
         data_downscaled_levels[curr_LOD] *= mask_downscaled_levels[curr_LOD] 
         restored_volume += data_downscaled_levels[curr_LOD]
-        tensor_to_nc(restored_volume, str(step)+'_replace.nc')
+        #tensor_to_nc(restored_volume, str(step)+'_replace.nc')
         step += 1
 
     while(len(data_downscaled_levels) > 0):
@@ -399,7 +399,7 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     
     for i in range(len(octree)):
         curr_node = octree[i]
-        tensor_to_nc(curr_node.data, "node_"+str(i)+".nc")
+        #tensor_to_nc(curr_node.data, "node_"+str(i)+".nc")
         if(len(octree[0].data.shape) == 4):
             x_start, y_start = get_location2D(full_shape[2], full_shape[3], curr_node.depth, curr_node.index)
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
@@ -408,7 +408,7 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
             x_start, y_start, z_start = get_location3D(full_shape[2], full_shape[3], full_shape[4], curr_node.depth, curr_node.index)
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
             restored_volume[:,:,x_start:x_start+img_part.shape[2],y_start:y_start+img_part.shape[3],z_start:z_start+img_part.shape[4]] = img_part
-        tensor_to_nc(img_part, "node_"+str(i)+"_upscaled.nc")
+        #tensor_to_nc(img_part, "node_"+str(i)+"_upscaled.nc")
     return restored_volume
 
 def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], 
