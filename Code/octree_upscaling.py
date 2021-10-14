@@ -399,6 +399,7 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
     
     for i in range(len(octree)):
         curr_node = octree[i]
+        tensor_to_nc(curr_node.data, "node_"+str(i)+".nc")
         if(len(octree[0].data.shape) == 4):
             x_start, y_start = get_location2D(full_shape[2], full_shape[3], curr_node.depth, curr_node.index)
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
@@ -407,7 +408,7 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
             x_start, y_start, z_start = get_location3D(full_shape[2], full_shape[3], full_shape[4], curr_node.depth, curr_node.index)
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
             restored_volume[:,:,x_start:x_start+img_part.shape[2],y_start:y_start+img_part.shape[3],z_start:z_start+img_part.shape[4]] = img_part
-    
+        tensor_to_nc(img_part, "node_"+str(i)+"_upscaled.nc")
     return restored_volume
 
 def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], 
@@ -578,7 +579,8 @@ if __name__ == '__main__':
     d = torch.tensor(f.get('data'))
     f.close()
     volume = d.unsqueeze(0).to(args['device'])
-    volume = volume[:,:,0:128,:,64]
+    # for figure in paper with blockwise example
+    #volume = volume[:,:,0:128,:,64]
 
     print("Loading octree from " + octree_path)
     #octree = torch.load(octree_path)
