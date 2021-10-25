@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import argparse
 import torch
-from torch._C import float32
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
