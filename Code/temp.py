@@ -62,5 +62,5 @@ def create_err_hist():
 if __name__ == '__main__':
     fold = os.path.join(data_folder, "SuperResolutionData", "Supernova_raw")
 
-    f = np.fromfile(os.path.join(fold, "E_1295.dat"), dtype=float32)
+    f = np.fromfile(os.path.join(fold, "E_1295.dat"), dtype=np.float32)
     print(f.shape)
