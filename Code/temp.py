@@ -66,9 +66,6 @@ if __name__ == '__main__':
     f = torch.tensor(f)
     f = f.reshape([432, 432, 432])
 
-    rootgrp = Dataset(os.path.join(fold, "test.nc"), "w", format="NETCDF4")
-    rootgrp.createDimension("u")
-    rootgrp.createDimension("v")
-    rootgrp.createDimension("w")
-    dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))    
-    dim_0[:] = f.cpu().numpy()
+    print(f.min())
+    print(f.mean())
+    print(f.max())
