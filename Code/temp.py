@@ -63,3 +63,12 @@ if __name__ == '__main__':
 
     f = np.fromfile(os.path.join(fold, "E_1295.dat"), dtype=np.float32)
     print(f.shape)
+    f = torch.tensor(f)
+    f = f.reshape([432, 432, 432])
+
+    rootgrp = Dataset(os.path.join(fold, "test.nc"), "w", format="NETCDF4")
+    rootgrp.createDimension("u")
+    rootgrp.createDimension("v")
+    rootgrp.createDimension("w")
+    dim_0 = rootgrp.createVariable("data", np.float32, ("u","v","w"))    
+    dim_0[:] = f.cpu().numpy()
