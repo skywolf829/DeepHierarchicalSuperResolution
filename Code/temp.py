@@ -59,21 +59,4 @@ def create_err_hist():
     plt.show()
 
 if __name__ == '__main__':
-    fold = os.path.join(data_folder, "SuperResolutionData", "Supernova_raw")
-    files = os.listdir(fold)
-    for file in files:
-        f = np.fromfile(os.path.join(fold, file), dtype=np.float32)
-        print(f.shape)
-        f = torch.tensor(f)
-        f = f.reshape([432, 432, 432])
-
-        print(f.min())
-        print(f.mean())
-        print(f.max())
-
-        f = f.unsqueeze(0).unsqueeze(0)
-        f -= f.min()
-        f *= (1/f.max())
-
-        h = h5py.File(os.path.join(fold, file.split("_")[1].split(".")[0]+".h5"), 'w')
-        h.create_dataset("data", data=f[0].cpu().numpy())
+    quit()
