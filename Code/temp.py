@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 import argparse
 import torch
+from torch._C import float32
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
@@ -18,7 +19,7 @@ import matplotlib.pyplot as plt
 
 project_folder_path = os.path.dirname(os.path.abspath(__file__))
 project_folder_path = os.path.join(project_folder_path, "..")
-data_folder = os.path.join(project_folder_path, "Data", "FilesToOctreeify")
+data_folder = os.path.join(project_folder_path, "Data")
 output_folder = os.path.join(project_folder_path, "Output")
 save_folder = os.path.join(project_folder_path, "SavedModels")
 
@@ -59,4 +60,7 @@ def create_err_hist():
     plt.show()
 
 if __name__ == '__main__':
-    print(plt.style.available)
+    fold = os.path.join(data_folder, "SuperResolutionData", "Supernova_raw")
+
+    f = np.fromfile(os.path.join(fold, "E_1295.dat"), dtype=float32)
+    print(f.shape)
