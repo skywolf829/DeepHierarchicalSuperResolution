@@ -59,4 +59,4 @@ def create_err_hist():
     plt.show()
 
 if __name__ == '__main__':
-    plume = h5py.Dataset(os.path.join())
+    print(plt.style.available)
