@@ -142,10 +142,16 @@ def create_caches_from_octree(octree: OctreeNodeList,
 def octree_to_downscaled_levels(max_LOD : int,
     data_levels: List[torch.Tensor], mask_levels:List[torch.Tensor],
     data_downscaled_levels: List[torch.Tensor], mask_downscaled_levels:List[torch.Tensor],
-    mode : str) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
+    mode : str, vis_levels=False) -> Tuple[List[torch.Tensor], List[torch.Tensor]]:
 
     mask_downscaled_levels[0][:] = mask_levels[0][:]
     data_downscaled_levels[0][:] = data_levels[0][:]
+
+    if(vis_levels):
+        tensor_to_nc(mask_downscaled_levels[0], 
+            'mask_downscaled_levels_level0.nc')
+        tensor_to_nc(data_downscaled_levels[0], 
+            'data_downscaled_levels_level0.nc')
 
     curr_LOD = 1
     while curr_LOD <= max_LOD:
@@ -159,7 +165,14 @@ def octree_to_downscaled_levels(max_LOD : int,
         data_downscaled_levels[curr_LOD] = data_down + data_levels[curr_LOD]
         mask_downscaled_levels[curr_LOD] = mask_down + mask_levels[curr_LOD]
 
+        if(vis_levels):
+            tensor_to_nc(mask_downscaled_levels[curr_LOD], 
+                'mask_downscaled_levels_level'+str(curr_LOD)+'.nc')
+            tensor_to_nc(data_downscaled_levels[curr_LOD], 
+                'data_downscaled_levels_level'+str(curr_LOD)+'.nc')
+
         curr_LOD += 1
+
 
     return data_downscaled_levels, mask_downscaled_levels
 
@@ -358,32 +371,36 @@ class UpscalingMethod(nn.Module):
                 print("No support for upscaling method: " + str(self.method))
         return up
 
-def upscale_volume(octree, full_shape, upscale):
+def upscale_volume(octree, full_shape, upscale, vis_levels=False):
     data_levels, mask_levels, data_downscaled_levels, mask_downscaled_levels = \
         create_caches_from_octree(octree, full_shape)
 
     data_downscaled_levels, mask_downscaled_levels = \
         octree_to_downscaled_levels(octree.max_LOD(),
         data_levels, mask_levels, data_downscaled_levels, 
-        mask_downscaled_levels, "2D" if len(octree[0].data.shape) == 4 else "3D")
+        mask_downscaled_levels, "2D" if len(octree[0].data.shape) == 4 else "3D",
+        vis_levels=vis_levels)
 
     curr_LOD = octree.max_LOD()
 
     restored_volume = data_downscaled_levels[curr_LOD].clone()
     step = 0
-    #tensor_to_nc(restored_volume, str(step)+'_orig.nc')
+    if(vis_levels):
+        tensor_to_nc(restored_volume, "upscaling_process_"+str(step)+'_origLR.nc')
     step += 1
     while(curr_LOD > 0):
         
         restored_volume = upscale(restored_volume, 2, curr_LOD)
-        #tensor_to_nc(restored_volume, str(step)+'_upscale.nc')
+        if(vis_levels):
+            tensor_to_nc(restored_volume, "upscaling_process_"+str(step)+'_upscale.nc')
         torch.cuda.synchronize()
         curr_LOD -= 1
 
         restored_volume *= (~mask_downscaled_levels[curr_LOD])
         data_downscaled_levels[curr_LOD] *= mask_downscaled_levels[curr_LOD] 
         restored_volume += data_downscaled_levels[curr_LOD]
-        #tensor_to_nc(restored_volume, str(step)+'_replace.nc')
+        if(vis_levels):
+            tensor_to_nc(restored_volume, "upscaling_process_"+str(step)+'_replace.nc')
         step += 1
 
     while(len(data_downscaled_levels) > 0):
@@ -564,6 +581,7 @@ if __name__ == '__main__':
         type=str2bool,help='Upscale blocks individually instead of using our MRSR algorithm')
     parser.add_argument('--compute_metrics',default="True",type=str2bool,help='Compute PSNR/SSIM')
     parser.add_argument('--border_on_octree',default="True",type=str2bool,help='Show border on octree vis')
+    parser.add_argument('--vis_levels',default="False",type=str2bool,help='Visualize levels during down/upscaling')
 
     args = vars(parser.parse_args())
     
@@ -581,6 +599,9 @@ if __name__ == '__main__':
     volume = d.unsqueeze(0).to(args['device'])
     # for figure in paper with blockwise example
     #volume = volume[:,:,0:128,:,64]
+    
+    # for figure in paper for pullpush
+    #volume = downscale(downscale(volume))
 
     print("Loading octree from " + octree_path)
     #octree = torch.load(octree_path)
@@ -595,7 +616,8 @@ if __name__ == '__main__':
     if(args['seams']):
         MRSR_volume = upscale_volume_seams(octree, volume.shape, upscale)
     else:
-        MRSR_volume = upscale_volume(octree, volume.shape, upscale)
+        MRSR_volume = upscale_volume(octree, volume.shape, upscale, 
+            vis_levels=args['vis_levels'])
     end_time = time.time()
     print("It took %0.02f seconds to upscale the volume with %s" % \
         (end_time - start_time, args['upscaling_method']))
