@@ -11,14 +11,14 @@ import os
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test a trained SSR model')
     
-    parser.add_argument('--save_folder',default="Isomag3D_vis_results",
+    parser.add_argument('--save_folder',default="Vorts_vis_results",
         type=str,help='Folder to save images to')
-    parser.add_argument('--output_file_name',default="Isomag3D.results",
+    parser.add_argument('--output_file_name',default="Vorts.results",
         type=str,help='filename to visualize in output folder')
-    parser.add_argument('--mode',type=str,default="3D")
+    parser.add_argument('--mode',type=str,default="2D")
+
     parser.add_argument('--start_ts', default=4000, type=int)
     parser.add_argument('--ts_skip', default=100, type=int)
-    
     
 
     #plt.style.use('Solarize_Light2')
@@ -34,6 +34,26 @@ if __name__ == '__main__':
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
+    if(args['output_file_name'] == "Isomag2D.results"):
+        args['start_ts'] = 4000
+        args['ts_skip'] = 10
+        args['mode'] = "2D"
+    elif(args['output_file_name'] == "Isomag3D.results"):
+        args['start_ts'] = 4000
+        args['ts_skip'] = 100
+        args['mode'] = "3D"
+    elif(args['output_file_name'] == "Mixing3D.results"):
+        args['start_ts'] = 800
+        args['ts_skip'] = 20
+        args['mode'] = "3D"
+    elif(args['output_file_name'] == "Plume.results"):
+        args['start_ts'] = 20
+        args['ts_skip'] = 1
+        args['mode'] = "3D"
+    elif(args['output_file_name'] == "Vorts.results"):
+        args['start_ts'] = 20
+        args['ts_skip'] = 1
+        args['mode'] = "3D"
 
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
     project_folder_path = os.path.join(project_folder_path, "..", "..")
@@ -119,7 +139,8 @@ if __name__ == '__main__':
             l = SR_type
             if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
                 l = SR_type + " hierarchy"
-            plt.plot(x, y, label=l)
+            if(SR_type != "SSRTVD"):
+                plt.plot(x, y, label=l)
 
         #plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
         #        mode="expand", borderaxespad=0, ncol=3)
@@ -156,8 +177,9 @@ if __name__ == '__main__':
         l = SR_type
         if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
             l = SR_type + " hierarchy"
-        ax1.plot(x, left_y, label=l, marker="s")
-        ax2.plot(x, right_y, label=l, marker="^", linestyle='dashed')
+        if(SR_type != "SSRTVD"):
+            ax1.plot(x, left_y, label=l, marker="s")
+            ax2.plot(x, right_y, label=l, marker="^", linestyle='dashed')
 
     ax1.legend()
     #ax2.legend()

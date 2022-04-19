@@ -41,5 +41,5 @@ python3 -u Code/train.py --save_name Supernova_ESRGAN --train_distributed True \
 --num_workers 0 --data_folder Supernova --mode 3D \
 --cropping_resolution 96 --patch_size 96 --training_patch_size 96 \
 --num_blocks 3 --epochs 500 --random_flipping True \
---min_dimension_size 27 --g_lr 0.00002 --alpha_1 1.0 --alpha_2 0.00 \
+--min_dimension_size 28 --g_lr 0.00002 --alpha_1 1.0 --alpha_2 0.00 \
 --model ESRGAN --generator_steps 1

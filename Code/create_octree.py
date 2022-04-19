@@ -577,6 +577,9 @@ if __name__ == '__main__':
     # for figure in paper with blockwise example
     # volume = volume[:,:,0:128,:,64]
 
+    # for figure in paper for pullpush
+    #volume = AvgPool2D(volume, 4)
+
     print("Data range: %0.02f - %0.02f, mean: %0.02f" % (volume.min(), volume.max(), volume.mean()))
     
     if args['target_reduction_rate'] is None:
