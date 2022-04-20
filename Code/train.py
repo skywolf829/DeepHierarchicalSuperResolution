@@ -338,6 +338,7 @@ if __name__ == '__main__':
     parser.add_argument('--padding',default=None, type=int,help='Conv padding')
     parser.add_argument('--stride',default=None, type=int,help='Conv stride length')
     parser.add_argument('--B',default=None, type=float,help='Residual scaling factor')
+    parser.add_argument('--padding_mode',default=None, type=str,help='Type of padding in networks')
             
     parser.add_argument('--train_distributed',type=str2bool,default=None, help='Use distributed training')
     parser.add_argument('--device',type=str,default=None, help='Device to use')
