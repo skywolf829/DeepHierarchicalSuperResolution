@@ -6,7 +6,7 @@ class Options():
         opt = {}
         # Input info
         opt["mode"]                    = "3D"      # 2D or 3D
-        opt['model']                   = "ESRGAN"  # ESRGAN or SSRTVD 
+        opt['model']                   = "ESRGAN"  # model name
         opt["data_folder"]             = "Isomag3D"
         opt["save_folder"]             = "SavedModels"
         opt["save_name"]               = "Temp"    # Folder that the model will be saved to
@@ -30,6 +30,7 @@ class Options():
 
         opt["n"]                       = 0         # Number of scales in the heirarchy, defined by the input and min_dimension_size
         opt["resolutions"]             = []        # The scales for the GAN
+        opt["padding_mode"]            = "zeros"    # zero, mirror, replication
 
         opt["train_distributed"]       = False
         opt["device"]                  = "cuda:0"

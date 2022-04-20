@@ -285,16 +285,21 @@ class DenseBlock(nn.Module):
         elif(opt['mode'] == "3D"):
             conv_layer = nn.Conv3d
         self.c1 = conv_layer(kernels, growth_channel, kernel_size=opt['kernel_size'],
-        stride=opt['stride'],padding=opt['padding'])
+        stride=opt['stride'],padding=opt['padding'], 
+                             padding_mode=opt['padding_mode'])
         self.c2 = conv_layer(kernels+growth_channel*1, growth_channel, kernel_size=opt['kernel_size'],
-        stride=opt['stride'],padding=opt['padding'])
+        stride=opt['stride'],padding=opt['padding'], 
+                             padding_mode=opt['padding_mode'])
         self.c3 = conv_layer(kernels+growth_channel*2, growth_channel, kernel_size=opt['kernel_size'],
-        stride=opt['stride'],padding=opt['padding'])
+        stride=opt['stride'],padding=opt['padding'], 
+                             padding_mode=opt['padding_mode'])
         self.c4 = conv_layer(kernels+growth_channel*3, growth_channel, kernel_size=opt['kernel_size'],
-        stride=opt['stride'],padding=opt['padding'])
+        stride=opt['stride'],padding=opt['padding'], 
+                             padding_mode=opt['padding_mode'])
         self.lrelu = nn.LeakyReLU(0.2,inplace=True)
         self.final_conv = conv_layer(kernels+growth_channel*4, kernels, kernel_size=opt['kernel_size'],
-        stride=opt['stride'],padding=opt['padding'])
+        stride=opt['stride'],padding=opt['padding'], 
+                             padding_mode=opt['padding_mode'])
 
     def forward(self,x):       
         c1_out = self.lrelu(self.c1(x))
@@ -327,12 +332,17 @@ class IB(nn.Module):
             conv_layer = nn.Conv2d
         elif(opt['mode'] == "3D"):
             conv_layer = nn.Conv3d
-        self.c1 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
-        self.c2 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
-        self.c3 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
-        self.c4 = conv_layer(out_c, out_c, kernel_size=3, padding=1)
+        self.c1 = conv_layer(in_c, out_c, kernel_size=3, padding=1, 
+                             padding_mode=opt['padding_mode'])
+        self.c2 = conv_layer(out_c, out_c, kernel_size=3, padding=1, 
+                             padding_mode=opt['padding_mode'])
+        self.c3 = conv_layer(out_c, out_c, kernel_size=3, padding=1, 
+                             padding_mode=opt['padding_mode'])
+        self.c4 = conv_layer(out_c, out_c, kernel_size=3, padding=1, 
+                             padding_mode=opt['padding_mode'])
 
-        self.c5 = conv_layer(in_c, out_c, kernel_size=3, padding=1)
+        self.c5 = conv_layer(in_c, out_c, kernel_size=3, padding=1, 
+                             padding_mode=opt['padding_mode'])
 
         self.path1 = nn.Sequential(
             spectral_norm(self.c1, eps=1e-4),            
@@ -490,14 +500,16 @@ class Generator(nn.Module):
             conv_layer = nn.Conv3d
 
         self.c1 = conv_layer(opt['num_channels'], opt['num_kernels'],
-        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
+        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])
         self.blocks = []
         for _ in range(opt['num_blocks']):
             self.blocks.append(RRDB(opt))
         self.blocks =  nn.ModuleList(self.blocks)
         
         self.c2 = conv_layer(opt['num_kernels'], opt['num_kernels'],
-        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
+        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])
 
         # Upscaling happens between 2 and 3
         if(self.opt['mode'] == "2D"):
@@ -506,13 +518,16 @@ class Generator(nn.Module):
             fact = 8
 
         self.c2_vs = conv_layer(opt['num_kernels'], opt['num_kernels']*fact,
-            stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
+            stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])
        
         self.c3 = conv_layer(opt['num_kernels'], opt['num_kernels'],
-        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'])
+        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])
 
         self.final_conv = conv_layer(opt['num_kernels'], opt['num_channels'],
-        stride=opt['stride'],padding=2,kernel_size=5)
+        stride=opt['stride'],padding=2,kernel_size=5, 
+                             padding_mode=opt['padding_mode'])
         self.lrelu = nn.LeakyReLU(0.2, inplace=True)
 
     def forward(self, x):
@@ -568,41 +583,49 @@ class Discriminator(nn.Module):
         # Min size needed = 32^(num_dims)
         self.model =  nn.Sequential(
             conv_layer(opt['num_channels'], 64, kernel_size=opt['kernel_size'],
-                padding=0, stride=1),
+                padding=0, stride=1, 
+                             padding_mode=opt['padding_mode']),
             nn.LeakyReLU(0.2),
 
             conv_layer(64, 64, kernel_size=opt['kernel_size'],
-                padding=0, stride=2),
+                padding=0, stride=2, 
+                             padding_mode=opt['padding_mode']),
             batchnorm_layer(64),
             nn.LeakyReLU(0.2),
 
             conv_layer(64, 128, kernel_size=opt['kernel_size'],
-                padding=0, stride=1),
+                padding=0, stride=1, 
+                             padding_mode=opt['padding_mode']),
             batchnorm_layer(128),
             nn.LeakyReLU(0.2),
 
             conv_layer(128, 128, kernel_size=opt['kernel_size'],
-                padding=0, stride=2),
+                padding=0, stride=2, 
+                             padding_mode=opt['padding_mode']),
             batchnorm_layer(128),
             nn.LeakyReLU(0.2),
 
             conv_layer(128, 256, kernel_size=opt['kernel_size'],
-                padding=0, stride=1),
+                padding=0, stride=1, 
+                             padding_mode=opt['padding_mode']),
             batchnorm_layer(256),
             nn.LeakyReLU(0.2),
             
             conv_layer(256, 256, kernel_size=opt['kernel_size'],
-                padding=0, stride=2),
+                padding=0, stride=2, 
+                             padding_mode=opt['padding_mode']),
             batchnorm_layer(256),
             nn.LeakyReLU(0.2),
 
             conv_layer(256, 512, kernel_size=opt['kernel_size'],
-                padding=0, stride=1),
+                padding=0, stride=1, 
+                             padding_mode=opt['padding_mode']),
             batchnorm_layer(512),
             nn.LeakyReLU(0.2),
 
             conv_layer(512, 512, kernel_size=opt['kernel_size'],
-                padding=0, stride=2)
+                padding=0, stride=2, 
+                             padding_mode=opt['padding_mode'])
         )
 
     def forward(self, x):
