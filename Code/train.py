@@ -54,7 +54,9 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
         if(opt['model'] == "SSRTVD"):
             discriminator_t = discriminators_t[-1]
             discriminators_t.pop(len(discriminators_t)-1)
-    if(opt['model'] == "ESRGAN"):
+    if(opt['model'] == "ESRGAN" or 
+       opt['model'] == "SSRTVD_NO_D" or
+       opt['model'] == "STNet"):
         combined_models = torch.nn.ModuleList([generator, discriminator]).to(rank)
     elif(opt['model'] == "SSRTVD"):
         combined_models = torch.nn.ModuleList([generator, discriminator, discriminator_t]).to(rank)
@@ -311,10 +313,10 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
             discriminators + [discriminator], opt,
             discriminators_t + [discriminator_t] if opt['model'] == "SSRTVD" else None)
     if not opt['train_distributed']:
-        if(opt['model'] == "ESRGAN"):
-            return generator, discriminator
-        else:
+        if(opt['model'] == "SSRTVD"):
             return generator, discriminator, discriminator_t
+        else:
+            return generator, discriminator
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train on an input that is 2D')
@@ -389,10 +391,10 @@ if __name__ == '__main__':
             if args[k] is not None:
                 opt[k] = args[k]
          # Determine scales    
-        if(opt['model'] == "ESRGAN"):
-            dataset = TrainingDataset(opt)
-        elif(opt['model'] == "SSRTVD"):
+        if(opt['model'] == "SSRTVD"):
             dataset = SSRTVD_dataset(opt)
+        else:
+            dataset = TrainingDataset(opt)
         init_scales(opt, dataset)
     else:        
         opt = load_options(os.path.join(save_folder, args["load_from"]))
@@ -401,12 +403,12 @@ if __name__ == '__main__':
         for k in args.keys():
             if args[k] is not None:
                 opt[k] = args[k]
-        if(opt['model'] == "ESRGAN"):
-            dataset = TrainingDataset(opt)
-            generators, discriminators = load_models(opt,args["device"])
-        elif(opt['model'] == "SSRTVD"):
+        if(opt['model'] == "SSRTVD"):
             dataset = SSRTVD_dataset(opt)            
             generators, discriminators, discriminators_t = load_models(opt,args["device"])
+        else:
+            dataset = TrainingDataset(opt)
+            generators, discriminators = load_models(opt,args["device"])
 
     now = datetime.datetime.now()
     start_time = time.time()
@@ -427,7 +429,9 @@ if __name__ == '__main__':
         if(opt['train_distributed']):
             os.environ['MASTER_ADDR'] = '127.0.0.1'              
             os.environ['MASTER_PORT'] = '29500' 
-            if(opt['model'] == "ESRGAN"):
+            if(opt['model'] == "ESRGAN" or 
+               opt['model'] == "SSRTVD_NO_D" or
+               opt['model'] == "STNet"):
                 mp.spawn(train_single_scale,
                     args=(generators, discriminators, None, opt, dataset),
                     nprocs=opt['gpus_per_node'],
@@ -438,14 +442,18 @@ if __name__ == '__main__':
                     nprocs=opt['gpus_per_node'],
                     join=True)
         else:
-            if(opt['model'] == "ESRGAN"):
+            if(opt['model'] == "ESRGAN" or 
+               opt['model'] == "SSRTVD_NO_D" or
+               opt['model'] == "STNet"):
                 generator, discriminator = train_single_scale(opt['device'], generators, 
                     discriminators, None, opt, dataset)
             else:
                 generator, discriminator, discriminator_t = train_single_scale(opt['device'], generators, 
                     discriminators, discriminators_t, opt, dataset)
 
-        if(opt['model'] == "ESRGAN"):
+        if(opt['model'] == "ESRGAN" or 
+           opt['model'] == "SSRTVD_NO_D" or
+               opt['model'] == "STNet"):
             generators, discriminators = load_models(opt,opt["device"])
         elif(opt['model'] == "SSRTVD"): 
             generators, discriminators, discriminators_t = load_models(opt,args["device"])
