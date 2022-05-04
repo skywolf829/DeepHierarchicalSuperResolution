@@ -33,7 +33,7 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
             filename = filenames[sorted_order[i]]
             print("Loading " + filename)   
             f = h5py.File(os.path.join(folder_to_load, filename), 'r')
-            d = torch.tensor(f.get('data'))
+            d = torch.tensor(np.array(f.get('data')))
             f.close()
             self.items.append(d)
         self.resolution = self.items[0].shape
@@ -149,7 +149,7 @@ class TestingDataset(torch.utils.data.Dataset):
             
             print("Loading " + filename)   
             f = h5py.File(to_load, 'r')
-            d = torch.tensor(f.get('data'))
+            d = torch.tensor(np.array(f.get('data')))
             f.close()
             self.items.append(d)    
 
@@ -175,7 +175,8 @@ class TrainingDataset(torch.utils.data.Dataset):
             
             print("Loading " + filename)   
             f = h5py.File(os.path.join(folder_to_load, filename), 'r')
-            d = torch.tensor(f.get('data'))
+            d = np.array(f.get('data'))
+            d = torch.tensor(d)
             f.close()
             self.items.append(d)
         self.resolution = self.items[0].shape

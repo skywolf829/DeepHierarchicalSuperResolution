@@ -253,17 +253,19 @@ def init_scales(opt, dataset):
 def init_gen(scale, opt):
     if(opt['model'] == "ESRGAN"):
         generator = Generator(opt["resolutions"][scale+1], opt)
-    elif(opt['model'] == "SSRTVD"):
+    elif(opt['model'] == "SSRTVD" or opt['model'] == "SSRTVD_NO_D"):
         generator = SSRTVD_G_2x(opt["resolutions"][scale+1], opt)
-
+    elif(opt['model'] == "STNet"):
+        generator = STNet_SSR(opt["resolutions"][scale+1], opt)
+        
     generator.apply(weights_init)
 
     return generator
 
 def init_discrim(scale, opt):
-    if(opt['model'] == "ESRGAN"):
+    if(opt['model'] == "ESRGAN" or opt['model'] == "STNet"):
         discriminator = Discriminator(opt["resolutions"][scale+1], opt)
-    elif(opt['model'] == "SSRTVD"):
+    elif(opt['model'] == "SSRTVD" or opt['model'] == "SSRTVD_NO_D"):
         discriminator = SSRTVD_D_S(opt)
 
     discriminator.apply(weights_init)
@@ -487,6 +489,60 @@ class SSRTVD_D_T(nn.Module):
         feat_maps.append(x.clone())
 
         return feat_maps
+
+class STNet_SSR(nn.Module):
+    def __init__ (self,resolution,opt):
+        super(STNet_SSR, self).__init__()
+        self.resolution = resolution
+        self.opt = opt
+        if(opt['mode'] == "2D"):
+            conv_layer = nn.Conv2d
+            self.pix_shuffle = nn.PixelShuffle(2)
+        elif(opt['mode'] == "3D"):
+            conv_layer = nn.Conv3d
+            
+        self.c1 = conv_layer(opt['num_channels'], opt['num_kernels'],
+        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])    
+        self.db1 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)
+        self.db2 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)
+        self.db3 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)    
+        self.db4 = DenseBlock(opt['num_kernels'], int(opt['num_kernels']/4), opt)     
+
+        if(self.opt['mode'] == "2D"):
+            fact = 4
+        elif(self.opt['mode'] == "3D"):
+            fact = 8
+
+        self.conv_vs = conv_layer(opt['num_kernels'], opt['num_kernels']*fact,
+            stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])
+        self.conv_up = conv_layer(opt['num_kernels'], opt['num_kernels'],
+        stride=opt['stride'],padding=opt['padding'],kernel_size=opt['kernel_size'], 
+                             padding_mode=opt['padding_mode'])
+        
+        self.final_conv = conv_layer(opt['num_kernels'], opt['num_channels'],
+        stride=opt['stride'],padding=2,kernel_size=5, 
+                             padding_mode=opt['padding_mode'])
+        self.lrelu = nn.LeakyReLU(0.2, inplace=True)
+        
+    def forward(self,x):
+        x = self.c1(x)
+        x = self.db1(x)
+        x = self.db2(x)
+        x = self.db3(x)
+        x = self.db4(x)
+        
+        x = self.conv_vs(x)
+        if(self.opt['mode'] == "3D"):
+            x = VoxelShuffle(x)
+        elif(self.opt['mode'] == "2D"):
+            x = self.pix_shuffle(x)
+        
+        x = self.lrelu(self.conv_up(x))
+        x = self.final_conv(x)
+    
+        return x
 
 class Generator(nn.Module):
     def __init__ (self, resolution, opt):
