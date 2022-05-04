@@ -333,7 +333,7 @@ if __name__ == '__main__':
     
     T = 50
     h = 0.5
-    skip = 50
+    skip = 25
     flow_maps = []
     for t0 in range(0, vf.shape[0]-T, skip):
         print(f"Calculting flow map {t0}/{vf.shape[0]}")
