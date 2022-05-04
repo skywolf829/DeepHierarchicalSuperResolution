@@ -10,30 +10,151 @@ import numpy as np
 import imageio
 from scipy.interpolate import RegularGridInterpolator  
 import matplotlib.pyplot as plt
+from numba import njit
 
-def RK4(positions, interpolator, t0, h=0.5, direction="forward"):
-    k1 = interpolator(positions)
-    k2_spot = positions[:,1:] + 0.5 * k1 * h
+@njit
+def RK4(vf, positions, t0, h=0.5, direction="forward"):
+    
+    s = (int(positions.shape[0]), 1)
+    ones = np.ones(s)*t0
+
+    k1 = interpolate(vf, positions)
+
+    k2_spot = positions[:,1:] + (0.5 * k1 * h)
     k2_spot = np.concatenate(
-        [np.ones([positions.shape[0], 1])*t0+0.5*h, 
-        k2_spot], axis=1)
-    k2 = interpolator(k2_spot)
-    k3_spot = positions[:,1:] + 0.5 * k2 * h
+        (ones+(0.5*h), 
+        k2_spot), axis=1)
+    k2 = interpolate(vf, k2_spot)
+
+    k3_spot = positions[:,1:] + (0.5 * k2 * h)
     k3_spot = np.concatenate(
-        [np.ones([positions.shape[0], 1])*t0+0.5*h, 
-        k3_spot], axis=1)
-    k3 = interpolator(k3_spot)
-    k4_spot = positions[:,1:] + k3 * h
+        (ones+(0.5*h), 
+        k3_spot), axis=1)
+    k3 = interpolate(vf, k3_spot)
+
+    k4_spot = positions[:,1:] + (k3 * h)
     k4_spot = np.concatenate(
-        [np.ones([positions.shape[0], 1])*t0+h, 
-        k4_spot], axis=1)
-    k4 = interpolator(k4_spot)
+        (ones+h, 
+        k4_spot), axis=1)
+    k4 = interpolate(vf, k4_spot)
     
     positions[:,1:] += (1/6) * (k1+  2*k2 + 2*k3 + k4) * h
     positions[:,0] += h
 
+
     return positions
 
+@njit
+def interpolate(data, positions):
+
+    indices, weights = index_and_weights_for(positions)
+    weights = np.repeat(weights, 2).reshape(positions.shape[0], 2*weights.shape[1])
+
+    s = (positions.shape[0], data.shape[-1])
+    values = np.zeros(s)
+    
+    max_values = [data.shape[0]-1], [data.shape[1]-1], [data.shape[2]-1]
+    max_values = np.array(max_values, dtype=np.int32)
+
+    max_values = np.repeat(max_values, int(positions.shape[0]))
+    max_values = np.stack((max_values[0:positions.shape[0]], 
+                        max_values[positions.shape[0]:2*positions.shape[0]], 
+                        max_values[2*positions.shape[0]:]), axis=1)
+    offset = np.zeros_like(max_values)
+
+    values += weights[:,0:2] * solution_at(data, indices)
+    
+    offset[:,0] = 1
+    values += weights[:,2:4] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+
+    offset[:,0] = 0
+    offset[:,1] = 1
+
+    values += weights[:,4:6] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+    offset[:,0] = 1
+
+    values += weights[:,6:8] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+    offset[:,0] = 0
+    offset[:,1] = 0
+    offset[:,2] = 1
+    values += weights[:,8:10] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+    offset[:,0] = 1
+    values += weights[:,10:12] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+    offset[:,0] = 0
+    offset[:,1] = 1
+    values += weights[:,12:14] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+    offset[:,0] = 1
+    values += weights[:,14:16] * solution_at(data, np.minimum(
+        indices + offset,
+        max_values))
+
+    return values
+
+@njit
+def index_and_weights_for(positions):
+    
+    indices = positions 
+    indices_floor = np.floor(indices.copy()).astype(np.int32)
+    diffs = indices - indices_floor
+
+    shape = (positions.shape[0], 8)
+    weights = np.empty(shape)
+    weights[:,0] = (1-diffs[:,0])*(1-diffs[:,1])*(1-diffs[:,2])
+    weights[:,1] = diffs[:,0]*(1-diffs[:,1])*(1-diffs[:,2])
+    weights[:,2] = (1-diffs[:,0])*diffs[:,1]*(1-diffs[:,2])
+    weights[:,3] = diffs[:,0]*diffs[:,1]*(1-diffs[:,2])
+    weights[:,4] = (1-diffs[:,0])*(1-diffs[:,1])*diffs[:,2]
+    weights[:,5] = diffs[:,0]*(1-diffs[:,1])*diffs[:,2]
+    weights[:,6] = (1-diffs[:,0])*diffs[:,1]*diffs[:,2]
+    weights[:,7] = diffs[:,0]*diffs[:,1]*diffs[:,2]
+
+
+    return indices_floor, weights
+
+def solution_at_vectorized(data, positions):
+    solutions = data[positions[:,0],
+                    positions[:,1],
+                    positions[:,2],
+                    :]
+    return solutions
+
+@njit
+def solution_at(data, positions):
+
+    solutions = np.empty((positions.shape[0], data.shape[-1]))
+    for i in range(positions.shape[0]):
+        s = data[int(positions[i,0]), 
+        int(positions[i,1]), 
+        int(positions[i,2])]
+
+        solutions[i] = s
+
+    return solutions
+
+class interpolator_3D():
+    def __init__(self, u_interpolator, v_interpolator):
+        self.u_interpolator = u_interpolator
+        self.v_interpolator = v_interpolator
+
+    def __call__(self, points):
+        u_values = self.u_interpolator(points)
+        v_values = self.v_interpolator(points)
+        interp_values = np.stack([v_values, u_values], axis=1)
+        return interp_values
+
+@njit
 def particle_tracer(vf, positions, tstart = 0, tmax=100, h=0.5):
     yg = np.linspace(0, vf.shape[2]-1, vf.shape[2])
     xg = np.linspace(0, vf.shape[3]-1, vf.shape[3])
@@ -45,12 +166,7 @@ def particle_tracer(vf, positions, tstart = 0, tmax=100, h=0.5):
     v_interpolator = RegularGridInterpolator((tg,yg,xg), vf[:,0], 
                                              bounds_error=False, 
                                              fill_value=0)
-    
-    def interpolator(points):
-        u_values = u_interpolator(points)
-        v_values = v_interpolator(points)
-        interp_values = np.stack([v_values, u_values], axis=1)
-        return interp_values
+    interp = interpolator_3D(u_interpolator, v_interpolator)
 
     traces = []
     traces.append(positions.copy())
@@ -59,63 +175,56 @@ def particle_tracer(vf, positions, tstart = 0, tmax=100, h=0.5):
         t0 = t*h
         positions = RK4(
             np.concatenate([np.ones([positions.shape[0], 1])*t0,positions], axis=1), 
-            interpolator, t0, h, "forward")[:,1:]
+            interp, t0, h, "forward")[:,1:]
         traces.append(positions)
         
     return traces
-               
+
+@njit
+def meshgrid(y, x):
+    yy = np.empty(shape=(y.size, x.size), dtype=y.dtype)
+    xx = np.empty(shape=(y.size, x.size), dtype=x.dtype)
+    for i in range(y.size):
+        for j in range(x.size):
+            yy[i,j] = i
+            xx[i,j] = j
+    return yy, xx
+
+@njit             
 def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
         
-    yg = np.linspace(0, vf.shape[2]-1, vf.shape[2])
-    xg = np.linspace(0, vf.shape[3]-1, vf.shape[3])
-    tg = np.linspace(0, vf.shape[0]-1, vf.shape[0])
-    g = np.stack(np.meshgrid(yg,xg,indexing="ij"))
-      
+    yg = np.linspace(0, vf.shape[1]-1, vf.shape[1])
+    xg = np.linspace(0, vf.shape[2]-1, vf.shape[2])
+    g = np.stack(meshgrid(yg,xg))
+    '''
     u_interpolator = RegularGridInterpolator((tg,yg,xg), vf[:,1], 
                                              bounds_error=False, 
                                              fill_value=0)
     v_interpolator = RegularGridInterpolator((tg,yg,xg), vf[:,0], 
                                              bounds_error=False, 
                                              fill_value=0)
-    
-    def interpolator(points):
-        u_values = u_interpolator(points)
-        v_values = v_interpolator(points)
-        interp_values = np.stack([v_values, u_values], axis=1)
-        return interp_values
-    
+    interp = interpolator_3D(u_interpolator, v_interpolator)
+    '''
+
     t = t0    
     tmax = min(t0+T, vf.shape[0])
 
-    positions = g.copy().transpose((1,2,0)).reshape(-1, 2)
+    positions = np.ascontiguousarray(g.copy().transpose((1,2,0))).reshape(-1, 2)
     while(t < tmax):
         #print(f"Tracing flow map at time {t}/{tmax}")
+        s = (int(positions.shape[0]), 1)
+        current_time = np.ones(s)*t
+        interp_spots = np.concatenate((current_time,positions), axis=1)
         positions = RK4(
-            np.concatenate([np.ones([positions.shape[0], 1])*t,positions], axis=1), 
-            interpolator, t0, h, "forward")[:,1:]
+            vf, interp_spots,
+            t0, h, "forward")[:,1:]
         t += h
-    flow_map = positions.transpose((1,0)).reshape(g.shape)
-    
-    '''
-    for t in range(t0, tmax):
-        print(f"Computing flow map for timestep {t}/{vf.shape[0]}")
-        points_start = flow_map[t].transpose(1,2,0).reshape(-1, 2)
-        points_start = np.concatenate(
-            [np.zeros([points_start.shape[0], 1]), 
-            points_start], axis=1)
-        points_start[:,0] = t
-        
-        for i in range(interp_per_timestep):
-            points_start = RK4(points_start, interpolator, 
-                               t+i, 0.5, "forward")
-            
-        flow_map[t+1] = points_start[:,1:].transpose(1,0).reshape(flow_map.shape[1:])
-    '''
-    
+    flow_map = np.ascontiguousarray(positions.transpose((1,0))).reshape(g.shape)
     return flow_map
 
+#@njit
 def FTLE_from_flow_map(fm, T):
-    ftle = np.zeros([fm.shape[0], fm.shape[2], fm.shape[3]])
+    ftle = np.zeros((fm.shape[0], fm.shape[2], fm.shape[3]))
     
     for t in range(0,fm.shape[0]):
         print(f"Calculating FTLE for frame {t+1}/{fm.shape[0]}")
@@ -141,7 +250,7 @@ def FTLE_from_flow_map(fm, T):
     return ftle
     
 def vf_to_gif(vf, save_name):
-    mag = np.linalg.norm(vf, axis=1)
+    mag = np.linalg.norm(vf, axis=-1)
     print(mag.shape)
     
     mag -= mag.min()
@@ -180,14 +289,16 @@ if __name__ == '__main__':
     
     d.close()
     vf = np.stack([v,u], axis=0)
-    vf = np.transpose(vf, (1, 0, 2, 3))    
     print(vf.shape)
+    vf = np.transpose(vf, (1, 2, 3, 0))    
+    print(vf.shape)
+
     vf_to_gif(vf[0:100], args['save_name'])
     
     # Make the vf in computation space
-    vf[:,0] *= (vf.shape[2] / (0.5 + 0.5))
-    vf[:,1] *= (vf.shape[3] / (7.5 + 0.5))
-    vf *= (15 / 1501)
+    vf[...,0] *= (vf.shape[1] / (0.5 + 0.5))
+    vf[...,1] *= (vf.shape[2] / (7.5 + 0.5))
+    vf *= (15 / vf.shape[0])
     
     '''
     # Check particle tracer
@@ -222,14 +333,20 @@ if __name__ == '__main__':
     
     T = 50
     h = 0.5
+    skip = 50
     flow_maps = []
-    for t0 in range(0, vf.shape[0]-T, 5):
+    for t0 in range(0, vf.shape[0]-T, skip):
         print(f"Calculting flow map {t0}/{vf.shape[0]}")
+        t_start = time.time()
         fm = vf_to_flow_map(vf, t0, T, h)
+        t_end = time.time()
+        t_passed = t_end - t_start
+        print(f"Calculation took {t_passed : 0.02f} seconds")
         flow_maps.append(fm)
     
     flow_maps = np.stack(flow_maps)
     
     ftle = FTLE_from_flow_map(flow_maps, T)
+
     ftle_to_gif(ftle, args['save_name']+"_ftle")
     
