@@ -223,9 +223,12 @@ if __name__ == '__main__':
     T = 50
     h = 0.5
     flow_maps = []
-    for t0 in range(0, vf.shape[0]-T, 5):
+    for t0 in range(0, vf.shape[0]-T, 25):
         print(f"Calculting flow map {t0}/{vf.shape[0]}")
+        t_start = time.time()
         fm = vf_to_flow_map(vf, t0, T, h)
+        t_elapsed = time.time() - t_start
+        print(f"Calculation took {t_elapsed : 0.02f} seconds")
         flow_maps.append(fm)
     
     flow_maps = np.stack(flow_maps)
