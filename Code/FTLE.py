@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import time
 import os
+import h5py
 import matplotlib
 from options import *
 from netCDF4 import Dataset
@@ -9,6 +10,7 @@ import numpy as np
 import imageio
 import matplotlib.pyplot as plt
 from numba import njit
+from utility_functions import create_folder
 
 @njit
 def RK4(vf, positions, t0, h=0.5, direction="forward"):
@@ -238,6 +240,16 @@ def ftle_to_gif(ftle, save_name):
     ftle = np.flip(ftle, axis=1)
     imageio.mimsave(save_name + ".gif", ftle, fps=60)
 
+def save_FTLE_data(ftle, save_folder, prefix):
+    ftle -= ftle.min()
+    ftle /= (ftle.max()+1e-8)
+    ftle = np.flip(ftle, axis=1)
+    for i in range(ftle.shape[0]):
+        f = h5py.File(os.path.join(save_folder, prefix+"_"+str(i)+".h5"), mode='w')
+        f.create_dataset("data", data=np.expand_dims(ftle[i], 0))
+        f.close()
+    
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Calculate and save FTLE for data')
@@ -304,10 +316,10 @@ if __name__ == '__main__':
     plt.show()'''    
     
     T = args['T']
-    h = args['H']
+    h = args['h']
     skip = args['skip']
     flow_maps = []
-    for t0 in np.arange(0.0, vf.shape[0]-T, skip):
+    for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), skip):
         print(f"Calculting flow map {t0}/{vf.shape[0]}")
         t_start = time.time()
         fm = vf_to_flow_map(vf, t0, T, h)
@@ -320,3 +332,7 @@ if __name__ == '__main__':
     ftle = FTLE_from_flow_map(flow_maps, T)
     ftle_to_gif(ftle[0:1000], args['save_name']+"_ftle")
     
+    create_folder(save_folder, args['save_name'])
+    save_FTLE_data(ftle, os.path.join(save_folder, 
+                                      args['save_name']), 
+                   str(T)+"_"+str(h))
