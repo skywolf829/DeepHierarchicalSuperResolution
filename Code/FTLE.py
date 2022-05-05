@@ -264,7 +264,7 @@ if __name__ == '__main__':
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
     project_folder_path = os.path.join(project_folder_path, "..")
     load_folder = os.path.join(project_folder_path, "Data", "FTLEFiles")
-    save_folder = os.path.join(project_folder_path, "SuperResolutionData")
+    save_folder = os.path.join(project_folder_path, "Data", "SuperResolutionData")
 
     nc_path = os.path.join(load_folder, args['data_name'])
     d = Dataset(nc_path, "r")
@@ -315,24 +315,25 @@ if __name__ == '__main__':
     plt.ylabel("y")
     plt.show()'''    
     
-    T = args['T']
+    #T = args['T']
     h = args['h']
-    skip = args['skip']
-    flow_maps = []
-    for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), skip):
-        print(f"Calculting flow map {t0}/{vf.shape[0]}")
-        t_start = time.time()
-        fm = vf_to_flow_map(vf, t0, T, h)
-        t_end = time.time()
-        t_passed = t_end - t_start
-        print(f"Calculation took {t_passed : 0.02f} seconds")
-        flow_maps.append(fm)
-    flow_maps = np.stack(flow_maps)
+    #skip = args['skip']
+    for T in range(5, 500, 5):
+        flow_maps = []
+        for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
+            print(f"Calculting flow map {t0}/{vf.shape[0]}")
+            t_start = time.time()
+            fm = vf_to_flow_map(vf, t0, T, h)
+            t_end = time.time()
+            t_passed = t_end - t_start
+            print(f"Calculation took {t_passed : 0.02f} seconds")
+            flow_maps.append(fm)
+        flow_maps = np.stack(flow_maps)
     
-    ftle = FTLE_from_flow_map(flow_maps, T)
-    ftle_to_gif(ftle[0:1000], args['save_name']+"_ftle")
-    
-    create_folder(save_folder, args['save_name'])
-    save_FTLE_data(ftle, os.path.join(save_folder, 
-                                      args['save_name']), 
-                   str(T)+"_"+str(h))
+        ftle = FTLE_from_flow_map(flow_maps, T)
+        #ftle_to_gif(ftle[0:1000], args['save_name']+"_ftle")
+        
+        create_folder(save_folder, args['save_name'])
+        save_FTLE_data(ftle, os.path.join(save_folder, 
+                                        args['save_name']), 
+                    str(T)+"_"+str(h))
