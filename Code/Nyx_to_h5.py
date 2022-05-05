@@ -50,6 +50,7 @@ if __name__ == '__main__':
         data = np.log(data+1)
         data -= data.min()
         data /= data.max()
+        np_to_h5(data, os.path.join(save_folder, file.split(".bin")[0]+".h5"))
         
     print(data.shape)
     np_to_NC(data, os.path.join(save_folder, file.split(".bin")[0]+".nc"))
