@@ -429,6 +429,7 @@ if __name__ == '__main__':
         if(opt['train_distributed']):
             os.environ['MASTER_ADDR'] = '127.0.0.1'              
             os.environ['MASTER_PORT'] = '29500' 
+            mp.set_start_method('fork')
             if(opt['model'] == "ESRGAN" or 
                opt['model'] == "SSRTVD_NO_D" or
                opt['model'] == "STNet"):
