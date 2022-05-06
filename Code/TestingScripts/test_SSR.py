@@ -334,11 +334,11 @@ if __name__ == '__main__':
                     if(torch.cuda.device_count() > 1 and args['parallel'] and args['mode'] == '3D'):
                         print("Upscaling in parallel on " + str(len(devices)) + " gpus")
                         x = generate_by_patch_parallel(generators[gen_to_use], 
-                            x, 140, 10, devices)
+                            x, 64, 10, devices)
                     else:
                         if(args['mode'] == '3D'):
                             x = generate_by_patch(generators[gen_to_use], 
-                                x, 140, 10, args['device'])
+                                x, 64, 10, args['device'])
                         elif(args['mode'] == '2D'):
                             x = generators[gen_to_use](x)
                     current_ds = int(current_ds / 2)
