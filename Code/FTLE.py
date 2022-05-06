@@ -318,9 +318,9 @@ if __name__ == '__main__':
     #T = args['T']
     h = args['h']
     #skip = args['skip']
-    for T in range(5, 500, 5):
+    for T in range(500, 500, 5):
         flow_maps = []
-        for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
+        for t0 in np.arange(max(500, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
             print(f"Calculting flow map {t0}/{vf.shape[0]}")
             t_start = time.time()
             fm = vf_to_flow_map(vf, t0, T, h)
@@ -331,9 +331,9 @@ if __name__ == '__main__':
         flow_maps = np.stack(flow_maps)
     
         ftle = FTLE_from_flow_map(flow_maps, T)
-        #ftle_to_gif(ftle[0:1000], args['save_name']+"_ftle")
+        ftle_to_gif(ftle, args['save_name']+"_ftle")
         
         create_folder(save_folder, args['save_name'])
-        save_FTLE_data(ftle, os.path.join(save_folder, 
-                                        args['save_name']), 
-                    str(T)+"_"+str(h))
+        #save_FTLE_data(ftle, os.path.join(save_folder, 
+        #                                args['save_name']), 
+        #            str(T)+"_"+str(h))
