@@ -442,7 +442,6 @@ if __name__ == '__main__':
                     args=(generators, discriminators, discriminators_t, opt, dataset),
                     nprocs=opt['gpus_per_node'],
                     join=True)
-            dist.barrier()
         else:
             if(opt['model'] == "ESRGAN" or 
                opt['model'] == "SSRTVD_NO_D" or
