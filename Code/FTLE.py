@@ -179,14 +179,17 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
     
     t = t0    
     tmax = max(min(t0+T, vf.shape[0]), 0)
-    print("t")
-    print(t)
-    print("tmax")
-    print(tmax)
-    positions = np.ascontiguousarray(g.copy().transpose((1,2,0))).reshape(-1, 2)
+    
+    positions = g.copy()
+    print(positions.shape)
+    positions = np.ascontiguousarray(positions.transpose((1,2,0)))
+    print(positions.shape)
+    positions = np.ascontiguousarray(positions.reshape(-1, 2))
     print(positions.shape)
     ts = np.arange(t0, tmax, h)
+    trace = np.empty((len(ts), vf.shape[-1]))
     for i in range(len(ts)):
+        trace[i] = positions[20000].copy()
         t = ts[i] 
         s = (int(positions.shape[0]), 1)
         current_time = np.ones(s)*t
@@ -194,9 +197,17 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
         positions = RK4(
             vf, interp_spots,
             t, h, "forward")[:,1:]
-    flow_map = positions.reshape((vf.shape[1], vf.shape[2], vf.shape[3]))
+    
+    trace[-1] = positions[20000].copy()    
+    
+    flow_map = np.ascontiguousarray(positions)
+    print(flow_map.shape)
+    flow_map = np.ascontiguousarray(
+        flow_map.reshape((vf.shape[1], vf.shape[2], vf.shape[3])))
+    print(flow_map.shape)
     flow_map = np.ascontiguousarray(flow_map.transpose(2, 0, 1))
-    return flow_map
+    print(flow_map.shape)
+    return flow_map, trace
 
 #@njit
 def FTLE_from_flow_map(fm, T):
@@ -329,10 +340,23 @@ if __name__ == '__main__':
         for t0 in np.arange(500, 501, 500):
             print(f"Calculting flow map {t0}/{vf.shape[0]}")
             t_start = time.time()
-            fm = vf_to_flow_map(vf, t0, T, h)
+            fm, trace = vf_to_flow_map(vf, t0, T, h)
             t_end = time.time()
             t_passed = t_end - t_start
             print(f"Calculation took {t_passed : 0.02f} seconds")
+            
+            fig,ax = plt.subplots()
+            plt.scatter(trace[:,1], trace[:,0], color="green", s=2)
+            circle = plt.Circle((40, 40), radius=5, linewidth=0)
+            c = matplotlib.collections.PatchCollection([circle], color='black')
+            ax.add_collection(c)
+            plt.title("Particle trace")
+            plt.xlim([0, vf.shape[2]])
+            plt.xlabel("x")
+            plt.ylim([0, vf.shape[1]])
+            plt.ylabel("y")
+            plt.show()
+    
             flow_maps.append(fm)
         flow_maps = np.stack(flow_maps)
     

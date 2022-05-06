@@ -152,7 +152,7 @@ class TestingDataset(torch.utils.data.Dataset):
 
         for i in range(len(sorted_order)):
             filename = filenames[sorted_order[i]]
-            to_load = os.path.join(folder_to_load, filename + "." + self.ext)
+            to_load = os.path.join(folder_to_load, filename)
             
             print("Loading " + filename)   
             f = h5py.File(to_load, 'r')
