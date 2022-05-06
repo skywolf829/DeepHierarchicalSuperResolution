@@ -146,7 +146,7 @@ class TestingDataset(torch.utils.data.Dataset):
             filenames_ints.append(int(filename.split(".")[0]))
         
         sorted_order = np.argsort(np.array(filenames_ints))
-        print("Dataset has " + str(len(self.item_names)) + " items. Reading them now.")
+        print("Dataset has " + str(len(self.filenames)) + " items. Reading them now.")
         
         self.items = []
 
