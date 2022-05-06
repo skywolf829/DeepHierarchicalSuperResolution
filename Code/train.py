@@ -414,7 +414,7 @@ if __name__ == '__main__':
     start_time = time.time()
     print_to_log_and_console("Started training at " + str(now), 
     os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
-
+    mp.set_start_method('fork')
     # Train each scale 1 by 1
     i = opt['scale_in_training']
     while i < opt["n"]:
@@ -429,7 +429,7 @@ if __name__ == '__main__':
         if(opt['train_distributed']):
             os.environ['MASTER_ADDR'] = '127.0.0.1'              
             os.environ['MASTER_PORT'] = '29500' 
-            mp.set_start_method('fork')
+            
             if(opt['model'] == "ESRGAN" or 
                opt['model'] == "SSRTVD_NO_D" or
                opt['model'] == "STNet"):
