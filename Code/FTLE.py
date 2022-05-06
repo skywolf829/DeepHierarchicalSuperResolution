@@ -179,9 +179,13 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
     
     t = t0    
     tmax = max(min(t0+T, vf.shape[0]), 0)
-
+    print("t")
+    print(t)
+    print("tmax")
+    print(tmax)
     positions = np.ascontiguousarray(g.copy().transpose((1,2,0))).reshape(-1, 2)
-    ts = np.arange(t0, tmax-h, h)
+    print(positions.shape)
+    ts = np.arange(t0, tmax, h)
     for i in range(len(ts)):
         t = ts[i] 
         s = (int(positions.shape[0]), 1)
@@ -190,13 +194,13 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
         positions = RK4(
             vf, interp_spots,
             t, h, "forward")[:,1:]
-    flow_map = np.ascontiguousarray(positions.transpose((1,0))).reshape(g.shape)
+    flow_map = positions.reshape((vf.shape[1], vf.shape[2], vf.shape[3]))
+    flow_map = np.ascontiguousarray(flow_map.transpose(2, 0, 1))
     return flow_map
 
 #@njit
 def FTLE_from_flow_map(fm, T):
     ftle = np.zeros((fm.shape[0], fm.shape[2], fm.shape[3]))
-    
     for t in range(0,fm.shape[0]):
         print(f"Calculating FTLE for frame {t+1}/{fm.shape[0]}")
         dYdy = np.gradient(fm[t,0,:,:],axis=0)
@@ -204,7 +208,7 @@ def FTLE_from_flow_map(fm, T):
         dXdy = np.gradient(fm[t,1,:,:],axis=0)
         dXdx = np.gradient(fm[t,1,:,:],axis=1)
 
-        full_gradient = np.array([[dYdy, dYdx],[dXdy, dXdx]])
+        full_gradient = np.array([[dYdy, dXdy],[dYdx, dXdx]])
         full_gradient = full_gradient.reshape(
             [full_gradient.shape[0], 
              full_gradient.shape[1], 
@@ -318,9 +322,11 @@ if __name__ == '__main__':
     #T = args['T']
     h = args['h']
     #skip = args['skip']
-    for T in range(500, 500, 5):
+    #for T in range(5, 500, 5):
+    for T in range(50, 51, 5):
         flow_maps = []
-        for t0 in np.arange(max(500, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
+        #for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
+        for t0 in np.arange(500, 501, 500):
             print(f"Calculting flow map {t0}/{vf.shape[0]}")
             t_start = time.time()
             fm = vf_to_flow_map(vf, t0, T, h)
@@ -331,7 +337,7 @@ if __name__ == '__main__':
         flow_maps = np.stack(flow_maps)
     
         ftle = FTLE_from_flow_map(flow_maps, T)
-        ftle_to_gif(ftle, args['save_name']+"_ftle")
+        ftle_to_gif(ftle[0:1000], args['save_name']+"_ftle")
         
         create_folder(save_folder, args['save_name'])
         #save_FTLE_data(ftle, os.path.join(save_folder, 
