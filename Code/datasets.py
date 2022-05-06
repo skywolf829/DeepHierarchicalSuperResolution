@@ -19,7 +19,9 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
         self.items = []
         self.subsample_dist = 1
 
-        folder_to_load = os.path.join(data_folder, self.opt['data_folder'], "TrainingData")
+        folder_to_load = os.path.join(data_folder, 
+                                      self.opt['data_folder'], 
+                                      "TrainingData")
 
         print("Initializing dataset - reading %i items" % len(os.listdir(folder_to_load)))
         filenames = []
@@ -133,18 +135,23 @@ class SSRTVD_dataset(torch.utils.data.Dataset):
 class TestingDataset(torch.utils.data.Dataset):
     def __init__(self, dataset_name):
 
-        folder_to_load = os.path.join(data_folder, dataset_name, "TestingData")
+        folder_to_load = os.path.join(data_folder, 
+                                      dataset_name, 
+                                      "TestingData")
         print("Initializing dataset")
-        self.item_names = []
-        for filename in os.listdir(folder_to_load):
-            self.item_names.append(filename.split("/")[-1].split(".")[0])
-            self.ext = filename.split("/")[-1].split(".")[1]
-        self.item_names.sort(key=int)
+        filenames = []
+        filenames_ints = []
+        for filename in os.listdir(folder_to_load):   
+            filenames.append(filename)
+            filenames_ints.append(int(filename.split(".")[0]))
+        
+        sorted_order = np.argsort(np.array(filenames_ints))
         print("Dataset has " + str(len(self.item_names)) + " items. Reading them now.")
-
+        
         self.items = []
 
-        for filename in self.item_names:
+        for i in range(len(sorted_order)):
+            filename = filenames[sorted_order[i]]
             to_load = os.path.join(folder_to_load, filename + "." + self.ext)
             
             print("Loading " + filename)   
@@ -168,9 +175,19 @@ class TrainingDataset(torch.utils.data.Dataset):
         self.subsample_dist = 1
 
         folder_to_load = os.path.join(data_folder, self.opt['data_folder'], "TrainingData")
+        filenames = []
+        filenames_ints = []
+        for filename in os.listdir(folder_to_load):   
+            filenames.append(filename)
+            filenames_ints.append(int(filename.split(".")[0]))
+        
+        sorted_order = np.argsort(np.array(filenames_ints))
+        print("Dataset has " + str(len(self.item_names)) + " items. Reading them now.")
+        
+        self.items = []
 
-        print("Initializing dataset - reading %i items" % len(os.listdir(folder_to_load)))
-        for filename in os.listdir(folder_to_load):
+        for i in range(len(sorted_order)):
+            filename = filenames[sorted_order[i]]
             self.item_names.append(filename)            
             
             print("Loading " + filename)   
