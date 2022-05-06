@@ -414,7 +414,7 @@ if __name__ == '__main__':
     start_time = time.time()
     print_to_log_and_console("Started training at " + str(now), 
     os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
-    mp.set_start_method('fork')
+    #mp.set_start_method('fork')
     # Train each scale 1 by 1
     i = opt['scale_in_training']
     while i < opt["n"]:
@@ -431,8 +431,8 @@ if __name__ == '__main__':
             os.environ['MASTER_PORT'] = '29500' 
             
             if(opt['model'] == "ESRGAN" or 
-               opt['model'] == "SSRTVD_NO_D" or
-               opt['model'] == "STNet"):
+                opt['model'] == "SSRTVD_NO_D" or
+                opt['model'] == "STNet"):
                 mp.spawn(train_single_scale,
                     args=(generators, discriminators, None, opt, dataset),
                     nprocs=opt['gpus_per_node'],
@@ -442,6 +442,7 @@ if __name__ == '__main__':
                     args=(generators, discriminators, discriminators_t, opt, dataset),
                     nprocs=opt['gpus_per_node'],
                     join=True)
+            dist.barrier()
         else:
             if(opt['model'] == "ESRGAN" or 
                opt['model'] == "SSRTVD_NO_D" or
