@@ -217,7 +217,11 @@ def generate_by_patch_parallel(generator, input_volume, patch_size, receptive_fi
     
     return final_volume
 
-def get_test_results(GT, x, mode, distributed=False):
+def get_test_results(GT, x, mode, distributed=False, test_on_gpu=True):
+    if(not test_on_gpu):
+        GT = GT.cpu()
+        x = x.cpu()
+    
     p = psnr_func(GT, x, GT.device).item()
     ms = mse_func(GT, x, GT.device).item()
     mr = mre_func(GT, x, GT.device).item()
@@ -347,7 +351,11 @@ if __name__ == '__main__':
 
                 print("Finished super resolving in %0.04f seconds. Final shape: %s. Performing tests." % \
                     (inference_this_frame, str(LR_data.shape)))
-                frame_results = get_test_results(GT_data, x, args['mode'], args['parallel'])
+                frame_results = get_test_results(GT_data, 
+                                                 x, 
+                                                 args['mode'], 
+                                                 args['parallel'],
+                                                 args['test_on_gpu'])
                 print("Model: " + str(frame_results))
                 this_scale_results[args['dict_entry_name']]['Upscaling time'].append(inference_this_frame)
                 for k in frame_results.keys():
@@ -365,7 +373,11 @@ if __name__ == '__main__':
                 inference_end_time = time.time()                
                 inference_this_frame = inference_end_time - inference_start_time
 
-                frame_results = get_test_results(GT_data, x, args['mode'], args['parallel'])
+                frame_results = get_test_results(GT_data, 
+                                                 x, 
+                                                 args['mode'], 
+                                                 args['parallel'],
+                                                 args['test_on_gpu'])
                 print("Interpolation: " + str(frame_results))
                 this_scale_results[interp]['Upscaling time'].append(inference_this_frame)
                 for k in frame_results.keys():
