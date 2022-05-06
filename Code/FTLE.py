@@ -189,7 +189,8 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
     ts = np.arange(t0, tmax, h)
     trace = np.empty((len(ts), vf.shape[-1]))
     for i in range(len(ts)):
-        trace[i] = positions[20000].copy()
+        trace[i] = positions[25010].copy()
+        print(positions[25010])
         t = ts[i] 
         s = (int(positions.shape[0]), 1)
         current_time = np.ones(s)*t
@@ -198,7 +199,7 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
             vf, interp_spots,
             t, h, "forward")[:,1:]
     
-    trace[-1] = positions[20000].copy()    
+    trace[-1] = positions[25010].copy()    
     
     flow_map = np.ascontiguousarray(positions)
     print(flow_map.shape)
@@ -334,7 +335,7 @@ if __name__ == '__main__':
     h = args['h']
     #skip = args['skip']
     #for T in range(5, 500, 5):
-    for T in range(50, 51, 5):
+    for T in range(10, 11, 5):
         flow_maps = []
         #for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
         for t0 in np.arange(500, 501, 500):
