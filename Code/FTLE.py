@@ -45,6 +45,16 @@ def RK4(vf, positions, t0, h=0.5, direction="forward"):
     return positions
 
 @njit
+def Euler(vf, positions, t0, h=0.5, direction="forward"):
+    
+    vf_interp = interpolate(vf, positions)
+    
+    positions[:,1:] += vf_interp*h
+    positions[:,0] += h
+
+    return positions
+
+@njit
 def interpolate(data, positions):
 
     indices, weights = index_and_weights_for(positions)
@@ -166,8 +176,8 @@ def meshgrid(y, x):
     xx = np.empty(shape=(y.size, x.size), dtype=x.dtype)
     for i in range(y.size):
         for j in range(x.size):
-            yy[i,j] = i
-            xx[i,j] = j
+            yy[i,j] = y[i]
+            xx[i,j] = x[j]
     return yy, xx
 
 @njit             
@@ -181,16 +191,10 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
     tmax = max(min(t0+T, vf.shape[0]), 0)
     
     positions = g.copy()
-    print(positions.shape)
     positions = np.ascontiguousarray(positions.transpose((1,2,0)))
-    print(positions.shape)
     positions = np.ascontiguousarray(positions.reshape(-1, 2))
-    print(positions.shape)
     ts = np.arange(t0, tmax, h)
-    trace = np.empty((len(ts), vf.shape[-1]))
     for i in range(len(ts)):
-        trace[i] = positions[25010].copy()
-        print(positions[25010])
         t = ts[i] 
         s = (int(positions.shape[0]), 1)
         current_time = np.ones(s)*t
@@ -199,34 +203,30 @@ def vf_to_flow_map(vf, t0, T, h=0.5, direction="forward"):
             vf, interp_spots,
             t, h, "forward")[:,1:]
     
-    trace[-1] = positions[25010].copy()    
     
     flow_map = np.ascontiguousarray(positions)
-    print(flow_map.shape)
     flow_map = np.ascontiguousarray(
         flow_map.reshape((vf.shape[1], vf.shape[2], vf.shape[3])))
-    print(flow_map.shape)
     flow_map = np.ascontiguousarray(flow_map.transpose(2, 0, 1))
-    print(flow_map.shape)
-    return flow_map, trace
+    return flow_map
 
 #@njit
 def FTLE_from_flow_map(fm, T):
     ftle = np.zeros((fm.shape[0], fm.shape[2], fm.shape[3]))
     for t in range(0,fm.shape[0]):
         print(f"Calculating FTLE for frame {t+1}/{fm.shape[0]}")
-        dYdy = np.gradient(fm[t,0,:,:],axis=0)
-        dYdx = np.gradient(fm[t,0,:,:],axis=1)
-        dXdy = np.gradient(fm[t,1,:,:],axis=0)
-        dXdx = np.gradient(fm[t,1,:,:],axis=1)
+        dYdy = np.gradient(fm[t,0,:,:],axis=0, edge_order=2)
+        dYdx = np.gradient(fm[t,0,:,:],axis=1, edge_order=2)
+        dXdy = np.gradient(fm[t,1,:,:],axis=0, edge_order=2)
+        dXdx = np.gradient(fm[t,1,:,:],axis=1, edge_order=2)
 
-        full_gradient = np.array([[dYdy, dXdy],[dYdx, dXdx]])
+        full_gradient = np.array([[dYdy, dYdx],[dXdy, dXdx]])
         full_gradient = full_gradient.reshape(
             [full_gradient.shape[0], 
              full_gradient.shape[1], 
              -1])
-        full_gradient = np.transpose(full_gradient, (2, 0, 1))
-        sq_result = full_gradient.transpose((0,2,1)) @ full_gradient
+        full_gradient = np.ascontiguousarray(np.transpose(full_gradient, (2, 0, 1)))
+        sq_result = full_gradient.copy().transpose((0,2,1)) @ full_gradient
         eigenvals = np.linalg.eigvals(sq_result)
         eigenvals = eigenvals.max(axis=1)
         eigenvals = eigenvals.reshape([fm.shape[2], fm.shape[3]])
@@ -238,7 +238,6 @@ def FTLE_from_flow_map(fm, T):
     
 def vf_to_gif(vf, save_name):
     mag = np.linalg.norm(vf, axis=-1)
-    print(mag.shape)
     
     mag -= mag.min()
     mag /= mag.max()
@@ -298,29 +297,33 @@ if __name__ == '__main__':
     vf_to_gif(vf[0:1000], args['save_name'])
     
     # Make the vf in computation space
-    vf[...,0] *= (vf.shape[1] / (3.0))
-    vf[...,1] *= (vf.shape[2] / (1.0))
-    vf *= (20.0 / vf.shape[0])
+    #vf[...,0] *= (vf.shape[1] / (3.0))
+    #vf[...,1] *= (vf.shape[2] / (1.0))
+    #vf *= (20.0 / vf.shape[0])
     
-    '''# Check particle tracer
+    '''
+    # Check particle tracer
+    yg = np.linspace(0, vf.shape[1]-1, int(vf.shape[1]))
+    xg = np.linspace(0, vf.shape[2]-1, int(vf.shape[2]/128))
+    g = np.stack(meshgrid(yg,xg))
+    g = g[:,30:50,0:1]
+    t = 0    
+    tmax = max(min(0+15, vf.shape[0]), 0)
+    
+    positions = g.copy()
+    positions = np.ascontiguousarray(positions.transpose((1,2,0)))
+    positions = np.ascontiguousarray(positions.reshape(-1, 2))
     traces = particle_tracer(vf, 
-                             np.array(
-                                 [[30.0, 5.0], 
-                                  [50.0, 5.0],
-                                  [40.0, 5.0],
-                                  [39.0, 5.0],
-                                  [37.0, 5.0]]),
-                             tstart=000.0,
+                             positions,
+                             tstart=1000.0,
                              tfinish=1500.0,
-                             h=0.5)
+                             h=0.05)
+                             
     traces = np.stack(traces)
     print(traces.shape)
     fig,ax = plt.subplots()
-    plt.scatter(traces[:,0,1], traces[:,0,0], color="green", s=2)
-    plt.scatter(traces[:,1,1], traces[:,1,0], color="blue", s=2)
-    plt.scatter(traces[:,2,1], traces[:,2,0], color="orange", s=2)
-    plt.scatter(traces[:,3,1], traces[:,3,0], color="red", s=2)
-    plt.scatter(traces[:,4,1], traces[:,4,0], color="gray", s=2)
+    for i in range(traces.shape[1]):        
+        plt.scatter(traces[:,i,1], traces[:,i,0])
     circle = plt.Circle((40, 40), radius=5, linewidth=0)
     c = matplotlib.collections.PatchCollection([circle], color='black')
     ax.add_collection(c)
@@ -329,40 +332,28 @@ if __name__ == '__main__':
     plt.xlabel("x")
     plt.ylim([0, vf.shape[1]])
     plt.ylabel("y")
-    plt.show()'''    
+    plt.show()  
+    '''
     
     #T = args['T']
     h = args['h']
     #skip = args['skip']
     #for T in range(5, 500, 5):
-    for T in range(10, 11, 5):
+    for T in range(50, 51, 5):
         flow_maps = []
         #for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
-        for t0 in np.arange(500, 501, 500):
+        for t0 in np.arange(5, 1000, 5):
             print(f"Calculting flow map {t0}/{vf.shape[0]}")
             t_start = time.time()
-            fm, trace = vf_to_flow_map(vf, t0, T, h)
+            fm = vf_to_flow_map(vf, t0, T, h)
             t_end = time.time()
             t_passed = t_end - t_start
             print(f"Calculation took {t_passed : 0.02f} seconds")
-            
-            fig,ax = plt.subplots()
-            plt.scatter(trace[:,1], trace[:,0], color="green", s=2)
-            circle = plt.Circle((40, 40), radius=5, linewidth=0)
-            c = matplotlib.collections.PatchCollection([circle], color='black')
-            ax.add_collection(c)
-            plt.title("Particle trace")
-            plt.xlim([0, vf.shape[2]])
-            plt.xlabel("x")
-            plt.ylim([0, vf.shape[1]])
-            plt.ylabel("y")
-            plt.show()
-    
             flow_maps.append(fm)
         flow_maps = np.stack(flow_maps)
     
         ftle = FTLE_from_flow_map(flow_maps, T)
-        ftle_to_gif(ftle[0:1000], args['save_name']+"_ftle")
+        ftle_to_gif(ftle, args['save_name']+"_ftle")
         
         create_folder(save_folder, args['save_name'])
         #save_FTLE_data(ftle, os.path.join(save_folder, 

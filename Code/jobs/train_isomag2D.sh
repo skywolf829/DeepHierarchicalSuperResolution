@@ -8,16 +8,7 @@ python -u Code/train.py \
 --min_dimension_size 32 --cropping_resolution 96 \
 --num_blocks 5 --num_kernels 32 \
 --padding_mode reflect \
---epochs 20 
-
-python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
---mode 2D --model SSRTVD_NO_G \
---data_folder Isomag2D --save_name isomag2D_SSRTVD_NO_G_new \
---min_dimension_size 32 --cropping_resolution 96 \
---num_blocks 5 --num_kernels 32 \
---padding_mode reflect \
---epochs 20 
+--epochs 100 
 
 python -u Code/train.py \
 --train_distributed true --gpus_per_node 8 \
@@ -26,4 +17,14 @@ python -u Code/train.py \
 --min_dimension_size 32 --cropping_resolution 96 \
 --num_blocks 5 --num_kernels 32 \
 --padding_mode reflect \
---epochs 20 
+--epochs 100 
+
+python -u Code/train.py \
+--train_distributed true --gpus_per_node 8 \
+--mode 2D --model SSRTVD_NO_G \
+--data_folder Isomag2D --save_name isomag2D_SSRTVD_NO_G_new \
+--min_dimension_size 32 --cropping_resolution 96 \
+--num_blocks 5 --num_kernels 32 \
+--padding_mode reflect \
+--epochs 100 
+
