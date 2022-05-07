@@ -21,8 +21,8 @@ python -u Code/train.py \
 
 python -u Code/train.py \
 --train_distributed false --gpus_per_node 8 \
---mode 3D --model SSRTVD_NO_G \
---data_folder Plume --save_name plume_SSRTVD_NO_G_new \
+--mode 3D --model SSRTVD_NO_D \
+--data_folder Plume --save_name plume_SSRTVD_NO_D_new \
 --min_dimension_size 32 --cropping_resolution 96 \
 --num_blocks 5 --num_kernels 32 \
 --padding_mode reflect \
