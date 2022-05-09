@@ -45,10 +45,10 @@ class Options():
 
         # GAN training info
         opt["alpha_1"]                 = 1       # Reconstruction loss coefficient
-        opt["alpha_2"]                 = 0.1        # Adversarial loss coefficient
+        opt["alpha_2"]                 = 0        # Adversarial loss coefficient
 
         opt["generator_steps"]         = 1
-        opt["discriminator_steps"]     = 1
+        opt["discriminator_steps"]     = 0
         opt["epochs"]                  = 50
         opt["minibatch"]               = 1        # Minibatch for training
         opt["g_lr"]                    = 0.0001    # Learning rate for GAN generator
