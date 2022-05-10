@@ -8,7 +8,7 @@ python -u Code/train.py \
 --min_dimension_size 32 --cropping_resolution 96 \
 --num_blocks 5 --num_kernels 32 \
 --padding_mode reflect \
---epochs 100 
+--epochs 25 
 
 python -u Code/train.py \
 --train_distributed true --gpus_per_node 8 \
@@ -17,7 +17,7 @@ python -u Code/train.py \
 --min_dimension_size 32 --cropping_resolution 96 \
 --num_blocks 5 --num_kernels 32 \
 --padding_mode reflect \
---epochs 100 
+--epochs 25 
 
 python -u Code/train.py \
 --train_distributed true --gpus_per_node 8 \
@@ -26,5 +26,5 @@ python -u Code/train.py \
 --min_dimension_size 32 --cropping_resolution 96 \
 --num_blocks 5 --num_kernels 32 \
 --padding_mode reflect \
---epochs 100 
+--epochs 25 
 
