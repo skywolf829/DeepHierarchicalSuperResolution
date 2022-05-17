@@ -199,7 +199,7 @@ def toImg(data, renorm_channels = True):
     if(renorm_channels):
         for c in range(data.shape[0]):
             data[c] -= data[c].min()
-            data[c] *= 1 / data[c].max()
+            data[c] *= 1 / (data[c].max() + 1e-8)
     if(len(data.shape) == 3):
         im =  cm.coolwarm(data[0])
         im *= 255
