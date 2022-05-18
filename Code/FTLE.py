@@ -334,18 +334,21 @@ if __name__ == '__main__':
     plt.ylabel("y")
     plt.show()  
     '''
-    vf = vf[:,::4, ::4, :]
+    
+    #vf = vf[:,::4, ::4, :]
     
     #T = args['T']
     h = args['h']
     #skip = args['skip']
-    #for T in range(5, 500, 25):
     total_flow_map_calculation = 0
     total_ftle_calculation = 0
-    for T in range(50, 51, 5):
+    Ts = [1, 5, 10, 25, 50, 100, 250, 500, 1000]
+    for T_spot in range(len(Ts)):
+    #for T in range(50, 51, 5):
+        T = Ts[T_spot]
         flow_maps = []
-        #for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
-        for t0 in np.arange(5, 1000, 5):
+        for t0 in np.arange(max(0.0, 0.0-T), min(vf.shape[0], vf.shape[0]-T), 1):
+        #for t0 in np.arange(5, 1000, 5):
             print(f"Calculting flow map {t0}/{vf.shape[0]}")
             t_start = time.time()
             fm = vf_to_flow_map(vf, t0, T, h)
@@ -361,12 +364,12 @@ if __name__ == '__main__':
         t_end = time.time()
         t_passed = t_end - t_start
         total_ftle_calculation = t_passed
-        ftle_to_gif(ftle, args['save_name']+"_ftle")
+        #ftle_to_gif(ftle, args['save_name']+"_ftle")
         
         #create_folder(save_folder, args['save_name'])
-        #save_FTLE_data(ftle, os.path.join(save_folder, 
-        #                                args['save_name']), 
-        #            str(T)+"_"+str(h))
+        save_FTLE_data(ftle, os.path.join(save_folder, 
+                        args['save_name']), 
+                        str(T)+"_"+str(h))
     
     print(f"Flow map stats - total:{total_flow_map_calculation : 0.04f} average:{total_flow_map_calculation/ftle.shape[0] : 0.04f}")
     print(f"FTLE stats - total:{total_ftle_calculation : 0.04f} average:{total_ftle_calculation/ftle.shape[0] : 0.04f}")

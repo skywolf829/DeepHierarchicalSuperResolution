@@ -67,4 +67,4 @@ python -u Code/train.py \
 --padding_mode reflect \
 --epochs 750 --device cuda:5 &
 
-wait < <(jobs -p)
+wait
