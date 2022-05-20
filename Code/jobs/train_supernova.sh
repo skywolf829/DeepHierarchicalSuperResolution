@@ -2,7 +2,7 @@
 cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 
 python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
+--train_distributed false --gpus_per_node 8 \
 --mode 3D --model ESRGAN \
 --g_lr 0.00002 \
 --data_folder Supernova --save_name supernova_ESRGAN_new \
@@ -13,7 +13,7 @@ python -u Code/train.py \
 --epochs 100 --device cuda:0 &
 
 python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
+--train_distributed false --gpus_per_node 8 \
 --mode 3D --model STNet \
 --g_lr 0.00002 \
 --data_folder Supernova --save_name supernova_STNet_new \

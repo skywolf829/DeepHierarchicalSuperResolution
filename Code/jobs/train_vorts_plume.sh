@@ -2,7 +2,7 @@
 cd /lus/theta-fs0/projects/DL4VIS/DeepHierarchicalSuperResolution
 
 python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
+--train_distributed false --gpus_per_node 8 \
 --mode 3D --model ESRGAN \
 --g_lr 0.00002 \
 --data_folder Vorts --save_name vorts_ESRGAN_new \
@@ -13,7 +13,7 @@ python -u Code/train.py \
 --epochs 500 --device cuda:0 &
 
 python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
+--train_distributed false --gpus_per_node 8 \
 --mode 3D --model STNet \
 --g_lr 0.00002 \
 --data_folder Vorts --save_name vorts_STNet_new \
@@ -35,7 +35,7 @@ python -u Code/train.py \
 --epochs 500 --device cuda:2 &
 
 python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
+--train_distributed false --gpus_per_node 8 \
 --mode 3D --model ESRGAN \
 --g_lr 0.00005 \
 --data_folder Plume --save_name plume_ESRGAN_new \
@@ -46,7 +46,7 @@ python -u Code/train.py \
 --epochs 750 --device cuda:3 & 
 
 python -u Code/train.py \
---train_distributed true --gpus_per_node 8 \
+--train_distributed false --gpus_per_node 8 \
 --mode 3D --model STNet \
 --g_lr 0.00005 \
 --data_folder Plume --save_name plume_STNet_new \
