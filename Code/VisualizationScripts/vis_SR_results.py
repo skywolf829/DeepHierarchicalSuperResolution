@@ -29,31 +29,11 @@ if __name__ == '__main__':
 
     font = {#'font.family' : 'normal',
         #'font.weight' : 'bold',
-        'font.size'   : 22,
-        'lines.linewidth' : 5}
+        'font.size'   : 20,
+        'lines.linewidth' : 3}
     plt.rcParams.update(font)
 
     args = vars(parser.parse_args())
-    if(args['output_file_name'] == "Isomag2D.results"):
-        args['start_ts'] = 4000
-        args['ts_skip'] = 10
-        args['mode'] = "2D"
-    elif(args['output_file_name'] == "Isomag3D.results"):
-        args['start_ts'] = 4000
-        args['ts_skip'] = 100
-        args['mode'] = "3D"
-    elif(args['output_file_name'] == "Mixing3D.results"):
-        args['start_ts'] = 800
-        args['ts_skip'] = 20
-        args['mode'] = "3D"
-    elif(args['output_file_name'] == "Plume.results"):
-        args['start_ts'] = 20
-        args['ts_skip'] = 1
-        args['mode'] = "3D"
-    elif(args['output_file_name'] == "Vorts.results"):
-        args['start_ts'] = 20
-        args['ts_skip'] = 1
-        args['mode'] = "3D"
 
     project_folder_path = os.path.dirname(os.path.abspath(__file__))
     project_folder_path = os.path.join(project_folder_path, "..", "..")
@@ -62,6 +42,10 @@ if __name__ == '__main__':
     save_folder = os.path.join(project_folder_path, "SavedModels")
     results_file = os.path.join(output_folder, args['output_file_name'])
     
+    if(not os.path.exists(results_file)):
+        print(f"{results_file} does not exist - exiting")
+        quit()
+        
     results = load_obj(results_file)
     save_folder = os.path.join(output_folder, args['save_folder'])
     if not os.path.exists(save_folder):
@@ -87,15 +71,12 @@ if __name__ == '__main__':
             y_label = metric
 
             for SR_type in results[scale_factor].keys():
-
                 # model results plotting
                 x = np.arange(args['start_ts'], 
                     args['start_ts'] + args['ts_skip']*len(results[scale_factor][SR_type][metric]),
                     args['ts_skip'])
                 y = results[scale_factor][SR_type][metric]
                 l = SR_type
-                if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
-                    l = SR_type + " hierarchy"
                 plt.plot(x, y, label=l)
 
             plt.legend()
@@ -103,7 +84,9 @@ if __name__ == '__main__':
             plt.ylabel(y_label)
 
             plt.title(scale_factor + " SR - " + metric)
-            plt.savefig(os.path.join(save_folder, scale_factor, metric+".png"),bbox_inches='tight',dpi=100)
+            plt.savefig(os.path.join(save_folder, scale_factor, metric+".png"),
+                        bbox_inches='tight',
+                        dpi=200)
             plt.clf()
 
     # Overall graphs
@@ -137,10 +120,8 @@ if __name__ == '__main__':
             x = scale_factors
             y = averaged_results[SR_type][metric]
             l = SR_type
-            if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
-                l = SR_type + " hierarchy"
-            if(SR_type != "SSRTVD"):
-                plt.plot(x, y, label=l)
+            
+            plt.plot(x, y, label=l)
 
         #plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
         #        mode="expand", borderaxespad=0, ncol=3)
@@ -159,7 +140,7 @@ if __name__ == '__main__':
             plt.ylim(bottom=0.45, top=1.0)
         plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"),
             bbox_inches='tight',
-            dpi=100)
+            dpi=200)
         #plt.show()
         plt.clf()
 
@@ -175,11 +156,8 @@ if __name__ == '__main__':
         left_y = averaged_results[SR_type][left_y_label]
         right_y = averaged_results[SR_type][right_y_label]
         l = SR_type
-        if(SR_type == "ESRGAN" or SR_type == "SSRTVD"):
-            l = SR_type + " hierarchy"
-        if(SR_type != "SSRTVD"):
-            ax1.plot(x, left_y, label=l, marker="s")
-            ax2.plot(x, right_y, label=l, marker="^", linestyle='dashed')
+        ax1.plot(x, left_y, label=l, marker="s")
+        ax2.plot(x, right_y, label=l, marker="^", linestyle='dashed')
 
     ax1.legend()
     #ax2.legend()
@@ -189,9 +167,11 @@ if __name__ == '__main__':
 
     ax1.set_xscale('log')
     ax1.minorticks_off()
-
+    
     ax1.set_xticks(scale_factors)
     ax1.set_xticklabels(scale_factors)
     ax1.set_title("Median PSNR/SSIM over SR factors")
-    plt.savefig(os.path.join(save_folder, "MedianValues", "Combined.png"),bbox_inches='tight',dpi=100)
+    plt.savefig(os.path.join(save_folder, "MedianValues", "Combined.png"),
+                bbox_inches='tight',
+                dpi=200)
     plt.clf()
