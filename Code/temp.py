@@ -15,7 +15,7 @@ import numpy as np
 import h5py
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
-from utility_functions import AvgPool3D, PSNR_torch
+from utility_functions import AvgPool3D, PSNR_torch, create_folder
 
 project_folder_path = os.path.dirname(os.path.abspath(__file__))
 project_folder_path = os.path.join(project_folder_path, "..")
@@ -82,14 +82,26 @@ def supernova_stuff():
         
 if __name__ == '__main__':
     
-    fold = os.path.join(data_folder, "SuperResolutionData", "Plume", "TrainingData")
-    file = "0.h5"
+    fold = os.path.join(data_folder, "SuperResolutionData", "cylinder")
     
-    f = h5py.File(os.path.join(fold, file), 'r')
-    d = torch.tensor(np.array(f.get('data'))).unsqueeze(0)
-    f.close()
+    files = os.listdir(fold)
+    np.random.shuffle(files)
     
+    create_folder(fold, "TrainingData")
+    create_folder(fold, "TestingData")
+    import shutil
     
-    quit()
+    for i in range(len(files)):
+        if(i < len(files)/2):
+            shutil.move(
+                os.path.join(fold, files[i]),
+                os.path.join(fold, "TrainingData", files[i])
+            )
+        else:
+            shutil.move(
+                os.path.join(fold, files[i]),
+                os.path.join(fold, "TestingData", files[i])
+            )
+    
 
     

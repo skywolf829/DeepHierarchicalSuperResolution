@@ -62,7 +62,7 @@ def generate_by_patch(generator, input_volume, patch_size, receptive_field, devi
                 while(not x_done):                        
                     if(x_stop == input_volume.shape[4]):
                         x_done = True
-                    print("%d:%d, %d:%d, %d:%d" % (z, z_stop, y, y_stop, x, x_stop))
+                    #print("%d:%d, %d:%d, %d:%d" % (z, z_stop, y, y_stop, x, x_stop))
                     result = generator(input_volume[:,:,z:z_stop,y:y_stop,x:x_stop])
 
                     x_offset = rf if x > 0 else 0
@@ -349,8 +349,8 @@ if __name__ == '__main__':
                 inference_end_time = time.time()                
                 inference_this_frame = inference_end_time - inference_start_time
 
-                print("Finished super resolving in %0.04f seconds. Final shape: %s. Performing tests." % \
-                    (inference_this_frame, str(LR_data.shape)))
+                print("Finished super resolving in %0.04f seconds. Start shape: %s, Final shape: %s. Performing tests." % \
+                    (inference_this_frame, str(LR_data.shape), str(x.shape)))
                 frame_results = get_test_results(GT_data, 
                                                  x, 
                                                  args['mode'], 
