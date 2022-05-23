@@ -10,7 +10,7 @@ python -u Code/train.py \
 --num_blocks 3 --num_kernels 96 \
 --patch_size 1024 --training_patch_size 1024 \
 --padding_mode reflect \
---epochs 50 --device cuda:0 &
+--epochs 10 --device cuda:0 &
 
 python -u Code/train.py \
 --train_distributed false --gpus_per_node 8 \
@@ -21,7 +21,7 @@ python -u Code/train.py \
 --num_blocks 3 --num_kernels 96 \
 --patch_size 1024 --training_patch_size 1024 \
 --padding_mode reflect \
---epochs 50 --device cuda:1 &
+--epochs 10 --device cuda:1 &
 
 python -u Code/train.py \
 --train_distributed false --gpus_per_node 8 \
@@ -32,6 +32,6 @@ python -u Code/train.py \
 --num_blocks 3 --num_kernels 96 \
 --patch_size 1024 --training_patch_size 1024 \
 --padding_mode reflect \
---epochs 50 --device cuda:2 &
+--epochs 10 --device cuda:2 &
 
 wait
