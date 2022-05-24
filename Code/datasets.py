@@ -156,7 +156,7 @@ class TestingDataset(torch.utils.data.Dataset):
             
             print("Loading " + filename)   
             f = h5py.File(to_load, 'r')
-            d = torch.tensor(np.array(f.get('data')))
+            d = torch.tensor(np.array(f.get('data'))).type(torch.float32)
             f.close()
             self.items.append(d)    
 
@@ -193,7 +193,7 @@ class TrainingDataset(torch.utils.data.Dataset):
             print("Loading " + filename)   
             f = h5py.File(os.path.join(folder_to_load, filename), 'r')
             d = np.array(f.get('data'))
-            d = torch.tensor(d)
+            d = torch.tensor(d).type(torch.float32)
             f.close()
             self.items.append(d)
         self.resolution = self.items[0].shape
@@ -288,7 +288,6 @@ class TrainingDataset(torch.utils.data.Dataset):
                     data = torch.flip(data,[3])
 
         return data.clone()
-
 
 def normalize_folders():
     folders = ['Mixing2D', 'Vorts', 'Plume', 'Mixing3D', 'Isomag2D', 'Isomag3D']
