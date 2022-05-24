@@ -79,6 +79,8 @@ if __name__ == '__main__':
                 l = SR_type
                 plt.plot(x, y, label=l)
 
+            #plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            #    fancybox=True, ncol=4, shadow=True)
             plt.legend()
             plt.xlabel("Timestep")
             plt.ylabel(y_label)

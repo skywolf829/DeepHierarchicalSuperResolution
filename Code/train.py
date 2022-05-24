@@ -76,7 +76,6 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
     print_to_log_and_console("Training on %s" % (opt["device"]), 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
 
-
     generator_optimizer = optim.Adam(generator.parameters(), lr=opt["g_lr"], 
     betas=(opt["beta_1"],opt["beta_2"]))
     generator_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer=generator_optimizer,
