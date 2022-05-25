@@ -48,3 +48,10 @@ python3 -u Code/VisualizationScripts/vis_SR_results.py \
 --mode 3D \
 --start_ts 1335 \
 --ts_skip 1
+
+python3 -u Code/VisualizationScripts/vis_SR_results.py \
+--save_folder boussinesq_vis_results \
+--output_file_name Boussinesq.results \
+--mode 2D \
+--start_ts 1 \
+--ts_skip 1
