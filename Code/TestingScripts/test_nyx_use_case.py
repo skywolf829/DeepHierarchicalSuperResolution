@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
     
     parser.add_argument('--mode',default="3D",type=str,help='2D or 3D')
-    parser.add_argument('--model_name',default="Isomag3D_ESRGAN_new",type=str,help='The folder with the model to load')
+    parser.add_argument('--model_name',default="nyx_use_case",type=str,help='The folder with the model to load')
     parser.add_argument('--device',default="cuda:0",type=str,help='Device to use for testing')
     
     args = vars(parser.parse_args())
@@ -280,24 +280,11 @@ if __name__ == '__main__':
         generators[i] = generators[i].to(opt['device'])
         generators[i].train(False)
 
-    lr_data_path = os.path.join(data_folder, "nyx64")
-    hr_data_path = os.path.join(data_folder, "nyx64")
+    lr_data_path = os.path.join(data_folder, "nyx64", "TestingDataLR")
+    hr_data_path = os.path.join(data_folder, "nyx64", "TestingDataHR")
 
-    results_location = os.path.join(output_folder, args['output_file_name'])
-
-    if(torch.cuda.device_count() > 1 and args['parallel']):
-        devices = []
-        for i in range(torch.cuda.device_count()):
-            devices.append("cuda:"+str(i))
+    results_location = os.path.join(output_folder, 'Nyx_use_case.results')
     
-    # Maps SR factor -> upscale mode -> results
-    # I.e. "2x" -> "trilinear" -> "PSNR", etc
-    all_results = {
-
-    }
-    if(os.path.exists(results_location)):
-        all_results = load_obj(results_location)
-    print(all_results)
     if args['mode'] == "2D":
         interp = "bilinear"
     else:
@@ -306,100 +293,96 @@ if __name__ == '__main__':
     saved_one = False
 
     with torch.no_grad():
-        for scale in range(len(generators)):
-            scale_factor_in_testing = str(2**(scale+1)) + "x"
-            this_scale_results = {
-                interp: {
-                    "Upscaling time": [],
-                    "MSE": [],
-                    "PSNR (dB)": [],
-                    "SSIM": [],
-                    "MRE": []
-                },
-                args['dict_entry_name']: {
-                    "Upscaling time": [],
-                    "MSE": [],
-                    "PSNR (dB)": [],
-                    "SSIM": [],
-                    "MRE": []
-                }
+        upscaling_results = {
+            interp: {
+                "Upscaling time": [],
+                "MSE": [],
+                "PSNR (dB)": [],
+                "SSIM": [],
+                "MRE": []
+            },
+            'model': {
+                "Upscaling time": [],
+                "MSE": [],
+                "PSNR (dB)": [],
+                "SSIM": [],
+                "MRE": []
             }
-            for f_name in os.listdir(lr_data_path):
-                f = h5py.File(os.path.join(lr_data_path, f_name))
-                LR_data = torch.tensor(np.array(f['data'])).to(args['device']).unsqueeze(0)
-                f.close()
-                f = h5py.File(os.path.join(hr_data_path, f_name))
-                GT_data = torch.tensor(np.array(f['data'])).to(args['device']).unsqueeze(0)
-                f.close()
-                print("LR Data size: " + str(LR_data.shape))
-                print("HR Data size: " + str(LR_data.shape))
-                
-                inference_start_time = time.time()
-                
-                x = LR_data.clone()
-                current_ds = 2**(scale+1)
-                while(current_ds > 1):
-                    gen_to_use = int(len(generators) - log2(current_ds))
-                    if(torch.cuda.device_count() > 1 and args['parallel'] and args['mode'] == '3D'):
-                        print("Upscaling in parallel on " + str(len(devices)) + " gpus")
-                        x = generate_by_patch_parallel(generators[gen_to_use], 
-                            x, 64, 10, devices)
-                    else:
-                        if(args['mode'] == '3D'):
-                            x = generate_by_patch(generators[gen_to_use], 
-                                x, 64, 10, args['device'])
-                        elif(args['mode'] == '2D'):
-                            x = generators[gen_to_use](x)
-                    current_ds = int(current_ds / 2)
-                inference_end_time = time.time()                
-                inference_this_frame = inference_end_time - inference_start_time
-
-                print("Finished super resolving in %0.04f seconds. Start shape: %s, Final shape: %s. Performing tests." % \
-                    (inference_this_frame, str(LR_data.shape), str(x.shape)))
-                frame_results = get_test_results(GT_data, 
-                                                 x, 
-                                                 "3D", 
-                                                 False,
-                                                 True)
-                print("Model: " + str(frame_results))
-                this_scale_results[args['dict_entry_name']]['Upscaling time'].append(inference_this_frame)
-                for k in frame_results.keys():
-                    this_scale_results[args['dict_entry_name']][k].append(frame_results[k])
-
-                inference_start_time = time.time()
-                x = LR_data.clone()
-                if(args['mode'] == "3D"):
-                    x = F.interpolate(x, scale_factor=2**(scale+1), 
-                    mode=interp, align_corners=False)
+        }
+        files = os.listdir(lr_data_path)
+        np.random.seed(2)
+        np.random.shuffle(files)
+        for f_name in files:
+            print(f_name)
+            f = h5py.File(os.path.join(lr_data_path, f_name))
+            LR_data = torch.tensor(np.array(f['data'])).to(args['device']).unsqueeze(0)
+            f.close()
+            f = h5py.File(os.path.join(hr_data_path, f_name))
+            GT_data = torch.tensor(np.array(f['data'])).to(args['device']).unsqueeze(0)
+            f.close()
+            print("LR Data size: " + str(LR_data.shape))
+            print("HR Data size: " + str(GT_data.shape))
+            
+            #LR_data = AvgPool3D(GT_data.clone(), 4)
+            inference_start_time = time.time()
+            
+            x = LR_data.clone()
+            current_ds = 4
+            while(current_ds > 1):
+                gen_to_use = int(len(generators) - log2(current_ds))        
+                if(args['mode'] == '3D'):
+                    x = generate_by_patch(generators[gen_to_use], 
+                        x, 64, 10, args['device'])
                 elif(args['mode'] == '2D'):
-                    x = F.interpolate(x, scale_factor=2**(scale+1), 
-                    mode=interp, align_corners=False)
-                inference_end_time = time.time()                
-                inference_this_frame = inference_end_time - inference_start_time
+                    x = generators[gen_to_use](x)                    
+                current_ds = int(current_ds / 2)
+                
+            inference_end_time = time.time()                
+            inference_this_frame = inference_end_time - inference_start_time
 
-                frame_results = get_test_results(GT_data, 
-                                                 x, 
-                                                 "3D", 
-                                                 False,
-                                                 True)
-                print("Interpolation: " + str(frame_results))
-                this_scale_results[interp]['Upscaling time'].append(inference_this_frame)
-                for k in frame_results.keys():
-                    this_scale_results[interp][k].append(frame_results[k])
+            print("Finished super resolving in %0.04f seconds. Start shape: %s, Final shape: %s. Performing tests." % \
+                (inference_this_frame, str(LR_data.shape), str(x.shape)))
+            frame_results = get_test_results(GT_data, 
+                                                x, 
+                                                "3D", 
+                                                False,
+                                                True)
+            m = x.clone()
+            
+            print("Model: " + str(frame_results))
+            upscaling_results['model']['Upscaling time'].append(inference_this_frame)
+            for k in frame_results.keys():
+                upscaling_results['model'][k].append(frame_results[k])
+
+            inference_start_time = time.time()
+            x = LR_data.clone()
+            if(args['mode'] == "3D"):
+                x = F.interpolate(x, scale_factor=4, 
+                mode=interp, align_corners=False)
+            elif(args['mode'] == '2D'):
+                x = F.interpolate(x, scale_factor=4, 
+                mode=interp, align_corners=False)
+            inference_end_time = time.time()                
+            inference_this_frame = inference_end_time - inference_start_time
+
+            frame_results = get_test_results(GT_data, 
+                                                x, 
+                                                "3D", 
+                                                False,
+                                                True)
+            print("Interpolation: " + str(frame_results))
+            upscaling_results[interp]['Upscaling time'].append(inference_this_frame)
+            for k in frame_results.keys():
+                upscaling_results[interp][k].append(frame_results[k])
 
             if(not saved_one):
                 tensor_to_nc(LR_data, os.path.join(output_folder, "LR.nc"))
-                tensor_to_nc(x, os.path.join(output_folder, "Upscaled.nc"))
+                tensor_to_nc(x, os.path.join(output_folder, "Interp.nc"))
+                tensor_to_nc(m, os.path.join(output_folder, "Model.nc"))
                 tensor_to_nc(GT_data, os.path.join(output_folder, "GT.nc"))
 
                 print(f"Saved {f_name}")
                 saved_one=True
 
-            if(scale_factor_in_testing not in all_results.keys()):
-                all_results[scale_factor_in_testing] = {}
-
-            for k1 in this_scale_results.keys():                
-                all_results[scale_factor_in_testing][k1] = this_scale_results[k1]
-    
-    save_obj(all_results, results_location)
+    save_obj(upscaling_results, results_location)
     print("Saved results")

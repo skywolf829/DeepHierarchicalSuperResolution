@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import argparse
-from datasets import TrainingDataset, SSRTVD_dataset
+from datasets import TrainingDataset, SSRTVD_dataset, NyxUseCaseTrainingDataset
 import datetime
 from utility_functions import AvgPool2D, AvgPool3D, print_to_log_and_console, reset_grads, str2bool, toImg
 from models import calc_gradient_penalty, init_discrim, init_discrim_t, \
@@ -132,13 +132,16 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
         if opt['train_distributed']:
             train_sampler.set_epoch(epoch) 
         for batch_num, real_hr in enumerate(dataloader):
-                        
-            real_hr = real_hr.to(opt["device"])       
-            
-            if opt['mode'] == "3D": 
-                real_lr = AvgPool3D(real_hr, 2)                
-            elif opt['mode'] == "2D":
-                real_lr = AvgPool2D(real_hr, 2)
+            if(opt['nyx_use_case'] and len(generators) == 0):
+                real_hr, real_lr = real_hr
+                real_hr = real_hr.to(opt["device"])  
+                real_lr = real_lr.to(opt["device"])  
+            else:
+                real_hr = real_hr.to(opt["device"])                       
+                if opt['mode'] == "3D": 
+                    real_lr = AvgPool3D(real_hr, 2)                
+                elif opt['mode'] == "2D":
+                    real_lr = AvgPool2D(real_hr, 2)
 
             #print("HR: %s, LR: %s" % (real_hr.shape, real_lr.shape))
             D_loss = 0
@@ -364,6 +367,9 @@ if __name__ == '__main__':
     parser.add_argument('--beta_1',default=None, type=float,help='')
     parser.add_argument('--beta_2',default=None, type=float,help='')
     parser.add_argument('--gamma',default=None, type=float,help='')
+    
+    parser.add_argument('--nyx_use_case',default=None,type=str2bool,help='')
+
 
     parser.add_argument('--load_from',default=None, type=str,help='Load a model to continue training')
     parser.add_argument('--save_every',default=None, type=int,help='How often to save during training')
@@ -392,6 +398,8 @@ if __name__ == '__main__':
          # Determine scales    
         if(opt['model'] == "SSRTVD"):
             dataset = SSRTVD_dataset(opt)
+        elif(opt['nyx_use_case']):
+            dataset = NyxUseCaseTrainingDataset(opt)
         else:
             dataset = TrainingDataset(opt)
         init_scales(opt, dataset)
@@ -405,6 +413,9 @@ if __name__ == '__main__':
         if(opt['model'] == "SSRTVD"):
             dataset = SSRTVD_dataset(opt)            
             generators, discriminators, discriminators_t = load_models(opt,args["device"])
+        elif(opt['nyx_use_case']):
+            dataset = NyxUseCaseTrainingDataset(opt)
+            generators, discriminators = load_models(opt,args["device"])
         else:
             dataset = TrainingDataset(opt)
             generators, discriminators = load_models(opt,args["device"])

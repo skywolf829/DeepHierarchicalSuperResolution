@@ -42,6 +42,8 @@ class Options():
         opt["save_discriminators"]     = True
         opt["patch_size"]              = 96
         opt["training_patch_size"]     = 96
+        
+        opt['nyx_use_case']         = False
 
         # GAN training info
         opt["alpha_1"]                 = 1       # Reconstruction loss coefficient
