@@ -21,7 +21,7 @@ import imageio
 import matplotlib.pyplot as plt
 
 
-def get_location2D(full_height: int, full_width : int, depth : int, index : int) -> Tuple[int, int]:
+def get_location2D(full_width: int, full_height : int, depth : int, index : int) -> Tuple[int, int]:
     final_x : int = 0
     final_y : int = 0
 
@@ -482,18 +482,27 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
 
     for i in range(len(octree)):
         curr_node = octree[i]
-        #print(curr_node.min_width())
+        #print(curr_node.data.shape)
+        #print(full_shape)
         if(curr_node.min_width() == 1):
             upscale.to_replication_padding()
         #tensor_to_nc(curr_node.data, "node_"+str(i)+".nc")
         if(len(octree[0].data.shape) == 4):
-            x_start, y_start = get_location2D(full_shape[2], full_shape[3], curr_node.depth, curr_node.index)
+            x_start, y_start = get_location2D(full_shape[2], full_shape[3], 
+                                              curr_node.depth, curr_node.index)
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
-            restored_volume[:,:,x_start:x_start+img_part.shape[2],y_start:y_start+img_part.shape[3]] = img_part
+            
+            restored_volume[:,:,x_start:x_start+img_part.shape[2],
+                            y_start:y_start+img_part.shape[3]] = img_part
         else:
-            x_start, y_start, z_start = get_location3D(full_shape[2], full_shape[3], full_shape[4], curr_node.depth, curr_node.index)
+            x_start, y_start, z_start = get_location3D(full_shape[2], 
+                                                       full_shape[3], 
+                                                       full_shape[4], 
+                                                       curr_node.depth, curr_node.index)
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
-            restored_volume[:,:,x_start:x_start+img_part.shape[2],y_start:y_start+img_part.shape[3],z_start:z_start+img_part.shape[4]] = img_part
+            restored_volume[:,:,x_start:x_start+img_part.shape[2],
+                            y_start:y_start+img_part.shape[3],
+                            z_start:z_start+img_part.shape[4]] = img_part
         #tensor_to_nc(img_part, "node_"+str(i)+"_upscaled.nc")
         if(curr_node.min_width() == 1):
             upscale.to_reflection_padding()
@@ -665,9 +674,10 @@ if __name__ == '__main__':
             
     print("Loading original volume from " + file_path)   
     f = h5py.File(file_path, 'r')
-    d = torch.tensor(f.get('data'))
+    d = torch.tensor(np.array(f.get('data')).astype(np.float32))
     f.close()
     volume = d.unsqueeze(0).to(args['device'])
+    print(volume.shape)
     # for figure in paper with blockwise example
     #volume = volume[:,:,0:128,:,64]
     

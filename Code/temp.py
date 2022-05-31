@@ -82,22 +82,18 @@ def supernova_stuff():
         
 if __name__ == '__main__':
     
-    fold = os.path.join(data_folder, "SuperResolutionData", "boussinesq", "TestingData")
+    file = os.path.join(data_folder, "FilesToOctreeify", "HeatedCylinder.h5")
     
-    files = os.listdir(fold)
-    
-    for i in range(1, len(files)):
-        f = files[i]
-        print(f)
-        f1 = h5py.File(os.path.join(fold, f), 'r+')
-        d = np.array(f1['data'])
-        d = d[:,1:449,3:147]
-        del f1['data']
-        f1.create_dataset('data', data=d)
-        #print(d.shape)
-        f1.close()
-        #print(f['data'].shape)
-        #quit()
+    f1 = h5py.File(file, 'r+')
+    d = np.array(f1['data'])
+    d = d[:,96:448-96,8:144-8]
+    del f1['data']
+    f1.create_dataset('data', data=d)
+    print(d.shape)
+    #print(d.shape)
+    f1.close()
+    #print(f['data'].shape)
+    #quit()
     
 
     

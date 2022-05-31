@@ -315,11 +315,13 @@ def downscale(data):
 
 def check_next_node(octree, queue, max_downscaling_level, min_chunk, epsilon):
     node = queue.pop(0)
-
+    #print(node.LOD)
     res1 = node.LOD < max_downscaling_level and node.min_width() >= min_chunk   
     res2 = False 
     if(res1):
         node_downscaled = downscale(node.data.clone())
+        #print(node.data.shape)
+        #print(node_downscaled.shape)
         node_downscaled_test = F.interpolate(node_downscaled, mode='nearest', scale_factor=2)
         node_downscaled_test -= node.data
         if(torch.all(torch.abs(node_downscaled_test) < epsilon)):
@@ -571,9 +573,11 @@ if __name__ == '__main__':
             
     print("Loading " + file_path)   
     f = h5py.File(file_path, 'r')
-    d = torch.tensor(f.get('data'))
+    d = np.array(f.get('data')).astype(np.float32)
+    d = torch.tensor(d)
     f.close()
     volume = d.unsqueeze(0).to(args['device'])
+    print(volume.shape)
     # for figure in paper with blockwise example
     # volume = volume[:,:,0:128,:,64]
 

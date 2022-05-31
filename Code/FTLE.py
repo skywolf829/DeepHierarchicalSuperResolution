@@ -344,6 +344,7 @@ if __name__ == '__main__':
     total_flow_map_calculation = 0
     total_ftle_calculation = 0
     Ts = [1, 5, 10, 25, 50, 100, 250, 500]
+    Ts = [25]
     for T_spot in range(len(Ts)):
     #for T in range(50, 51, 5):
         T = Ts[T_spot]
