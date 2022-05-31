@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
     
     parser.add_argument('--mode',default="3D",type=str,help='2D or 3D')
-    parser.add_argument('--model_name',default="nyx_use_case",type=str,help='The folder with the model to load')
+    parser.add_argument('--model_name',default="nyx_use_case_gan",type=str,help='The folder with the model to load')
     parser.add_argument('--device',default="cuda:0",type=str,help='Device to use for testing')
     
     args = vars(parser.parse_args())

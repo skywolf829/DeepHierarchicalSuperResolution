@@ -82,26 +82,22 @@ def supernova_stuff():
         
 if __name__ == '__main__':
     
-    fold = os.path.join(data_folder, "SuperResolutionData", "cylinder")
+    fold = os.path.join(data_folder, "SuperResolutionData", "boussinesq", "TestingData")
     
     files = os.listdir(fold)
-    np.random.shuffle(files)
     
-    create_folder(fold, "TrainingData")
-    create_folder(fold, "TestingData")
-    import shutil
-    
-    for i in range(len(files)):
-        if(i < len(files)/2):
-            shutil.move(
-                os.path.join(fold, files[i]),
-                os.path.join(fold, "TrainingData", files[i])
-            )
-        else:
-            shutil.move(
-                os.path.join(fold, files[i]),
-                os.path.join(fold, "TestingData", files[i])
-            )
+    for i in range(1, len(files)):
+        f = files[i]
+        print(f)
+        f1 = h5py.File(os.path.join(fold, f), 'r+')
+        d = np.array(f1['data'])
+        d = d[:,1:449,3:147]
+        del f1['data']
+        f1.create_dataset('data', data=d)
+        #print(d.shape)
+        f1.close()
+        #print(f['data'].shape)
+        #quit()
     
 
     

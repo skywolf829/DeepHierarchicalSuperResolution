@@ -13,6 +13,16 @@ def reset_grads(model,require_grad):
         p.requires_grad_(require_grad)
     return model
 
+def to_replication_pad(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        m.padding_mode = "replicate"
+        
+def to_reflection_pad(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        m.padding_mode = "reflect"
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv2d') != -1:

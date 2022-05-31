@@ -148,8 +148,7 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
             G_loss = 0        
             rec_loss = 0        
             
-            if(opt["alpha_2"] > 0.0 and (opt['model'] == "SSRTVD" or \
-                (opt['model'] == "ESRGAN" and epoch > opt['epochs']/2))):
+            if(opt["alpha_2"] > 0.0):
                 # Update spatial discrim
                 for _ in range(opt["discriminator_steps"]):
                     discriminator.zero_grad()
@@ -157,16 +156,20 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                     D_loss = 0
                     
                     output_real = discriminator(
-                        real_hr[:,1:2] if opt['model'] == "SSRTVD" else real_hr)
+                        real_hr[:,1:2] if opt['model'] == "SSRTVD" else real_hr).mean()
 
                     fake = generator(
                         real_lr[:,1:2] if opt['model'] == "SSRTVD" else real_lr).detach()
-                    output_fake = discriminator(fake)
+                    output_fake = discriminator(fake).mean()
                     
                     # Relativistic discriminator
                     if(opt['model'] == "ESRGAN"):
-                        D_loss = -torch.log(torch.sigmoid(output_real.mean() - output_fake.mean())) - \
-                            torch.log(1-torch.sigmoid(output_fake.mean() - output_real.mean()))
+                        #D_loss = (torch.log(output_real.mean())) + \
+                        #    (torch.log(1-output_fake.mean()))
+                        D_loss = F.binary_cross_entropy(output_real,
+                                        torch.ones_like(output_real)) + \
+                                 F.binary_cross_entropy(output_fake,
+                                        torch.zeros_like(output_fake))
                     elif(opt['model'] == "SSRTVD"):
                         D_loss = ((output_real.mean() - 1)**2 + output_fake.mean()**2)/2
 
@@ -210,9 +213,8 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                     G_loss += rec_loss
                     rec_loss = rec_loss.item()
 
-                if(opt["alpha_2"] > 0.0 and (opt['model'] == "SSRTVD" or \
-                    (opt['model'] == "ESRGAN" and epoch > opt['epochs']/2))):            
-                    output = discriminator(fake[:,1:2] if opt['model'] == "SSRTVD" else fake)
+                if(opt["alpha_2"] > 0.0):            
+                    output = discriminator(fake[:,1:2] if opt['model'] == "SSRTVD" else fake).mean()
                     
                     if opt['model'] == "SSRTVD":
                         
@@ -238,10 +240,11 @@ def train_single_scale(rank, generators, discriminators, discriminators_t, opt, 
                         #G_loss += feat_loss * 0.05 + (d_t_loss + d_s_loss) * opt['alpha_2']
                     else:
                         # spatial relativistic loss
-                        output_real_discrim = discriminator(real_hr).detach()
-                        adv_G_loss = torch.log(1 - torch.sigmoid(output_real_discrim.mean() - output.mean())) - \
-                            torch.log(torch.sigmoid(output.mean() - output_real_discrim.mean()))
-
+                        #output_real_discrim = discriminator(real_hr).detach()
+                        #adv_G_loss = torch.log(1 - torch.sigmoid(output_real_discrim.mean() - output.mean())) - \
+                        #    torch.log(torch.sigmoid(output.mean() - output_real_discrim.mean()))
+                        adv_G_loss = F.binary_cross_entropy(output,
+                                        torch.ones_like(output))
                     G_loss += adv_G_loss                    
                     gen_adv_err = adv_G_loss.item()
                 

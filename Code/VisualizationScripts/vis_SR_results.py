@@ -137,7 +137,12 @@ if __name__ == '__main__':
         #plt.title("Median " + metric + " over SR factors")
         if(metric == "PSNR (dB)"):
             plt.ylim(bottom=20, top=55)
-            plt.title(args['output_file_name'].split(".")[0])
+            t = args['output_file_name'].split(".")[0]
+            if(t == "Nyx256"):
+                t = "Nyx"
+            elif(t == "Boussinesq"):
+                t = "Heated flow"
+            plt.title(t)
         elif(metric == "SSIM"):
             plt.ylim(bottom=0.45, top=1.0)
         plt.savefig(os.path.join(save_folder, "MedianValues", metric+".png"),

@@ -93,7 +93,7 @@ def load_models(opt, device):
         print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "generators", 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
 
-    if os.path.exists(os.path.join(load_folder, "discriminators")):
+    if os.path.exists(os.path.join(load_folder, "discriminators")) and False:
         discrim_params = torch.load(os.path.join(load_folder, "discriminators"),
         map_location=device)
         for i in range(opt["n"]):
@@ -113,7 +113,7 @@ def load_models(opt, device):
         print_to_log_and_console("Warning: %s doesn't exists - can't load these model parameters" % "discriminators", 
         os.path.join(opt["save_folder"], opt["save_name"]), "log.txt")
 
-    if os.path.exists(os.path.join(load_folder, "discriminators_t")):
+    if os.path.exists(os.path.join(load_folder, "discriminators_t")) and False:
         discrim_params = torch.load(os.path.join(load_folder, "discriminators_t"),
             map_location=device)
         for i in range(opt["n"]):
@@ -673,15 +673,10 @@ class Discriminator(nn.Module):
             batchnorm_layer(256),
             nn.LeakyReLU(0.2),
 
-            conv_layer(256, 512, kernel_size=opt['kernel_size'],
+            conv_layer(256, 1, kernel_size=opt['kernel_size'],
                 padding=0, stride=1, 
                              padding_mode=opt['padding_mode']),
-            batchnorm_layer(512),
-            nn.LeakyReLU(0.2),
-
-            conv_layer(512, 512, kernel_size=opt['kernel_size'],
-                padding=0, stride=2, 
-                             padding_mode=opt['padding_mode'])
+            nn.Sigmoid()
         )
 
     def forward(self, x):

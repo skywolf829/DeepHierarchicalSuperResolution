@@ -3,7 +3,7 @@ from torch import tensor
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.jit
-from utility_functions import str2bool, PSNR_torch, ssim, ssim3D, ssim3D_distributed
+from utility_functions import str2bool, PSNR_torch, ssim, ssim3D, ssim3D_distributed, to_replication_pad, to_reflection_pad
 import time
 import h5py
 import argparse
@@ -307,6 +307,57 @@ def generate_by_patch_parallel(generator, input_volume, patch_size, receptive_fi
     
     return final_volume
 
+def generate_by_patch(generator, input_volume, patch_size, receptive_field, device):
+    with torch.no_grad():
+        final_volume = torch.zeros(
+            [input_volume.shape[0], input_volume.shape[1], input_volume.shape[2]*2, 
+            input_volume.shape[3]*2, input_volume.shape[4]*2]
+            ).to(device)
+        
+        rf = receptive_field
+                    
+        z_done = False
+        z = 0
+        z_stop = min(input_volume.shape[2], z + patch_size)
+        while(not z_done):
+            if(z_stop == input_volume.shape[2]):
+                z_done = True
+            y_done = False
+            y = 0
+            y_stop = min(input_volume.shape[3], y + patch_size)
+            while(not y_done):
+                if(y_stop == input_volume.shape[3]):
+                    y_done = True
+                x_done = False
+                x = 0
+                x_stop = min(input_volume.shape[4], x + patch_size)
+                while(not x_done):                        
+                    if(x_stop == input_volume.shape[4]):
+                        x_done = True
+                    #print("%d:%d, %d:%d, %d:%d" % (z, z_stop, y, y_stop, x, x_stop))
+                    result = generator(input_volume[:,:,z:z_stop,y:y_stop,x:x_stop])
+
+                    x_offset = rf if x > 0 else 0
+                    y_offset = rf if y > 0 else 0
+                    z_offset = rf if z > 0 else 0
+
+                    final_volume[:,:,
+                    2*z+z_offset:2*z+result.shape[2],
+                    2*y+y_offset:2*y+result.shape[3],
+                    2*x+x_offset:2*x+result.shape[4]] = result[:,:,z_offset:,y_offset:,x_offset:]
+
+                    x += patch_size - 2*rf
+                    x = min(x, max(0, input_volume.shape[4] - patch_size))
+                    x_stop = min(input_volume.shape[4], x + patch_size)
+                y += patch_size - 2*rf
+                y = min(y, max(0, input_volume.shape[3] - patch_size))
+                y_stop = min(input_volume.shape[3], y + patch_size)
+            z += patch_size - 2*rf
+            z = min(z, max(0, input_volume.shape[2] - patch_size))
+            z_stop = min(input_volume.shape[2], z + patch_size)
+
+    return final_volume
+
 class UpscalingMethod(nn.Module):
     def __init__(self, method : str, device : str, model_name = None,
         distributed = False):
@@ -338,13 +389,24 @@ class UpscalingMethod(nn.Module):
                 self.devices.append("cuda:"+str(i))
         print("Loaded models")
 
+    def to_reflection_padding(self):
+        if(self.method == "model"):
+            for i in range(len(self.models)):
+                self.models[i].apply(to_reflection_pad)
+        
+    def to_replication_padding(self):
+        if(self.method == "model"):
+            for i in range(len(self.models)):
+                self.models[i].apply(to_replication_pad)    
+        
     def forward(self, in_frame : torch.Tensor, scale_factor : float,
     lod : Optional[int] = None) -> torch.Tensor:
         with torch.no_grad():
             if(self.method == "linear"):
                 up = F.interpolate(in_frame, 
                     mode='bilinear' if len(in_frame.shape) == 4 else "trilinear", 
-                    scale_factor=scale_factor)
+                    scale_factor=scale_factor,
+                    align_corners=False)
             elif(self.method == "bicubic"):
                 up = F.interpolate(in_frame, mode='bicubic', scale_factor=scale_factor)
             elif(self.method == "nearest"):
@@ -353,15 +415,19 @@ class UpscalingMethod(nn.Module):
                 up = in_frame
                 while(scale_factor > 1):
                     if(len(self.models) - lod < 0):
-                        print("Model not supported for downscaling level " + str(lod) + \
-                            ", using interpolation instead")
+                        #print("Model not supported for downscaling level " + str(lod) + \
+                        #    ", using interpolation instead")
                         # Use interpolation instead
                         up = F.interpolate(up, 
                             mode='bilinear' if len(in_frame.shape) == 4 else "trilinear", 
-                            scale_factor=2)
+                            scale_factor=2, align_corners=False)
                     else:
                         if not self.distributed:
-                            up = self.models[len(self.models)-lod](up)
+                            if(len(up.shape) == 4):
+                                up = self.models[len(self.models)-lod](up)
+                            else:
+                                up = generate_by_patch(self.models[len(self.models)-lod], 
+                                                   up, 64, 20, self.device)
                         else:
                             up = generate_by_patch_parallel(self.models[len(self.models)-lod], 
                                 up, 140, 10, self.devices)
@@ -413,9 +479,12 @@ def upscale_volume(octree, full_shape, upscale, vis_levels=False):
 def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int], 
     upscale):
     restored_volume = torch.zeros(full_shape).to(octree[0].data.device)
-    
+
     for i in range(len(octree)):
         curr_node = octree[i]
+        #print(curr_node.min_width())
+        if(curr_node.min_width() == 1):
+            upscale.to_replication_padding()
         #tensor_to_nc(curr_node.data, "node_"+str(i)+".nc")
         if(len(octree[0].data.shape) == 4):
             x_start, y_start = get_location2D(full_shape[2], full_shape[3], curr_node.depth, curr_node.index)
@@ -426,6 +495,8 @@ def upscale_volume_seams(octree: OctreeNodeList, full_shape: List[int],
             img_part = upscale(curr_node.data, 2**curr_node.LOD, curr_node.LOD)
             restored_volume[:,:,x_start:x_start+img_part.shape[2],y_start:y_start+img_part.shape[3],z_start:z_start+img_part.shape[4]] = img_part
         #tensor_to_nc(img_part, "node_"+str(i)+"_upscaled.nc")
+        if(curr_node.min_width() == 1):
+            upscale.to_reflection_padding()
     return restored_volume
 
 def upscale_volume_downscalinglevels(octree: OctreeNodeList, full_shape: List[int], 
@@ -621,7 +692,7 @@ if __name__ == '__main__':
     end_time = time.time()
     print("It took %0.02f seconds to upscale the volume with %s" % \
         (end_time - start_time, args['upscaling_method']))
-
+    
     if(args['upscaling_method'] == "model"):
         total_inference_calls = 0
         if(args['seams']):
@@ -631,7 +702,7 @@ if __name__ == '__main__':
             total_inference_calls = octree.max_LOD()
         print("Total number of inference calls was %i" % total_inference_calls)
     if(args['compute_metrics']):
-        p = PSNR_torch(MRSR_volume, volume).item()
+        p = PSNR_torch(MRSR_volume, volume, torch.tensor([1.0], device=MRSR_volume.device)).item()
         if(len(volume.shape) == 4):
             s = ssim(MRSR_volume, volume).item()
         elif len(volume.shape) == 5 and args['distributed']:
@@ -667,14 +738,14 @@ if __name__ == '__main__':
 
     print("Saving upscaled volume to " + os.path.join(save_folder, args['save_name']+".nc"))
     tensor_to_nc(MRSR_volume, os.path.join(save_folder, args['save_name']+".nc"))
-
+    print(MRSR_volume.shape)
     if(args['save_original_volume']):
         print("Saving upscaled volume to " + os.path.join(save_folder, args['volume_file']+".nc"))
         tensor_to_nc(volume, os.path.join(save_folder, args['volume_file']+".nc"))
 
     if(args['compute_metrics'] and args['save_error_volume']):
         print("Saving error volume to " + os.path.join(save_folder, args['volume_file']+"_err.nc"))
-        tensor_to_nc(torch.abs(volume[0,0]-MRSR_volume[0,0]).cpu().numpy(),
+        tensor_to_nc(torch.abs(volume-MRSR_volume).cpu(),
             os.path.join(save_folder, args['save_name']+"_err.nc"))
 
     if(args['save_downscaling_levels']):
