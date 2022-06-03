@@ -269,8 +269,8 @@ def save_FTLE_data(ftle, save_folder, prefix):
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Calculate and save FTLE for data')
-    parser.add_argument('--data_name',default=None,type=str,help='Input file')
-    parser.add_argument('--save_name',default=None,type=str,help='Save folder name')
+    parser.add_argument('--data_name',default="boussinesq.nc",type=str,help='Input file')
+    parser.add_argument('--save_name',default="temp",type=str,help='Save folder name')
     parser.add_argument('--T',default=10,type=float,help='Advection time')
     parser.add_argument('--h',default=0.5,type=float,help='Advection step')
     parser.add_argument('--skip',default=1,type=int,help='timestep skip')
@@ -344,7 +344,7 @@ if __name__ == '__main__':
     total_flow_map_calculation = 0
     total_ftle_calculation = 0
     Ts = [1, 5, 10, 25, 50, 100, 250, 500]
-    Ts = [25]
+    Ts = [100]
     for T_spot in range(len(Ts)):
     #for T in range(50, 51, 5):
         T = Ts[T_spot]

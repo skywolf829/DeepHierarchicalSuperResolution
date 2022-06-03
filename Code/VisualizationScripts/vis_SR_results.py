@@ -126,7 +126,7 @@ if __name__ == '__main__':
             plt.plot(x, y, label=l)
 
         #plt.legend(bbox_to_anchor=(0,1.02,1,0.2), loc="lower left",
-        #        mode="expand", borderaxespad=0, ncol=3)
+        #        mode="expand", borderaxespad=0, ncol=4)
         if(metric == "SSIM"):
             plt.xlabel("Scale factor")
         if(args['output_file_name'] == "Isomag2D.results"):

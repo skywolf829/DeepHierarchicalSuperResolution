@@ -82,7 +82,7 @@ def supernova_stuff():
         
 if __name__ == '__main__':
     
-    file = os.path.join(data_folder, "FilesToOctreeify", "HeatedCylinder.h5")
+    file = os.path.join(data_folder, "FilesToOctreeify", "HeatedCylinder6.h5")
     
     f1 = h5py.File(file, 'r+')
     d = np.array(f1['data'])
